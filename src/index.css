@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 機場翻頁鐘動畫效果預留 */
+.flip-animate {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
