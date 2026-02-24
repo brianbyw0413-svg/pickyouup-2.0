@@ -426,7 +426,7 @@ export default function App() {
               </div>
 
               <div>
-                <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/\D/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className={inputClasses} />
+                <input value={currentForm.phone} onChange={(e) => { let raw = e.target.value.replace(/\D/g, ''); if (raw.startsWith('886') && raw.length > 10) { raw = '0' + raw.slice(3); } raw = raw.slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={13} className={inputClasses} />
                 <FieldError message={errors.phone} />
               </div>
 
