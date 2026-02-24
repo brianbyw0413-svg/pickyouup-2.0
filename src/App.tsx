@@ -13,7 +13,6 @@ const supabase = createClient(
 
 const LIFF_ID = '2009218677-iJIIF1oj';
 const LINE_ID_ID = '@835acfgq';
-// 修正：oaMessage 需要編碼後的 @ (即 %40)，確保訊息能帶入
 const LINE_OA_URL = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID_ID)}/`;
 
 const BASE_PRICING = {
@@ -58,13 +57,10 @@ const isValidPhone = (phone) => /^09\d{8}$/.test(phone.replace(/[-\s]/g, ''));
 
 const formatLiffPhone = (phone) => {
   if (!phone) return '';
-  // 強力修正：先去掉所有非數字字元
   let digits = phone.replace(/\D/g, '');
-  // 如果是 886 開頭且後面還有 9 碼以上（台灣手機 9xxxxxxx 共 9 碼）
   if (digits.startsWith('886') && digits.length >= 12) {
     return '0' + digits.slice(3);
   }
-  // 如果是 09 開頭
   if (digits.startsWith('09')) {
     return digits.slice(0, 10);
   }
@@ -378,7 +374,6 @@ export default function App() {
             <div className="text-xl font-black">大車直達 (9人座)</div>
             <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-8人 / 行李1-8件 / 直達無加點</div>
           </button>
-          {/* 修正：不確定按鈕改回使用完整包含 @ 的 ID */}
           <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
             <div className="text-zinc-400 text-sm">我真的不確定...</div>
             <div className="text-yellow-500 font-bold">需要人工報價 / 安全座椅 / 多點加停</div>
@@ -413,6 +408,9 @@ export default function App() {
       window.scrollTo(0, 0);
     };
 
+    // 統一 Input 樣式，加入 autofill 覆蓋
+    const inputClasses = "w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 [color-scheme:dark]";
+
     return (
       <Layout>
         <div className="mt-4 space-y-6 pb-24 px-2">
@@ -423,36 +421,36 @@ export default function App() {
 
             <div className="space-y-6 text-left">
               <div>
-                <input value={currentForm.name} onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }} type="text" placeholder="聯絡人姓名" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input value={currentForm.name} onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }} type="text" placeholder="聯絡人姓名" className={inputClasses} />
                 <FieldError message={errors.name} />
               </div>
 
               <div>
-                <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/\D/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/\D/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className={inputClasses} />
                 <FieldError message={errors.phone} />
               </div>
 
               <div className="space-y-1">
                 <p className="text-sm font-bold ml-5">{currentMode === 'pickup' ? '抵達日期' : '出發日期'}</p>
-                <input value={currentForm.date} onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }} type="date" min={getTodayString()} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input value={currentForm.date} onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }} type="date" min={getTodayString()} className={inputClasses} />
                 <FieldError message={errors.date} />
               </div>
 
               <div>
-                <input value={currentForm.flight} onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }} type="text" placeholder="航班編號（例如: BR001）" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 uppercase" />
+                <input value={currentForm.flight} onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }} type="text" placeholder="航班編號（例如: BR001）" className={inputClasses + " uppercase"} />
                 <FieldError message={errors.flight} />
               </div>
 
               {currentMode === 'dropoff' && (
                 <div className="space-y-1">
                   <p className="text-sm font-bold ml-5">上車時間</p>
-                  <input value={currentForm.time} onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }} type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                  <input value={currentForm.time} onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }} type="time" className={inputClasses} />
                   <FieldError message={errors.time} />
                 </div>
               )}
 
               <div>
-                <input value={currentForm.address} onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }} type="text" placeholder={currentMode === 'pickup' ? '下車詳細地址' : '上車詳細地址'} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input value={currentForm.address} onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }} type="text" placeholder={currentMode === 'pickup' ? '下車詳細地址' : '上車詳細地址'} className={inputClasses} />
                 <FieldError message={errors.address} />
               </div>
             </div>
