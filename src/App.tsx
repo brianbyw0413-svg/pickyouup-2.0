@@ -6,6 +6,11 @@ export default function App() {
   const [carType, setCarType] = useState(''); 
   const [mode, setMode] = useState(''); 
   const [paidStep, setPaidStep] = useState('none'); 
+  
+  // 核心資料狀態：支援自動帶入
+  const [form, setForm] = useState({
+    name: '', phone: '', address: '', date1: '', time1: '', flight1: '', date2: '', flight2: ''
+  });
 
   const pricing = {
     'small-dropoff': { price: 1200, link: 'https://api.payuni.com.tw/api/uop/receive_info/2/1/U03424091/PN8Fwvsnm1m7AdiVeUUp' },
@@ -59,7 +64,6 @@ export default function App() {
                >{title}</button>
              ))}
           </div>
-          <p className="text-zinc-600 text-[10px] mt-24 font-black uppercase tracking-[0.4em]">Premium Service since 2026</p>
         </div>
       </Layout>
     );
@@ -71,18 +75,18 @@ export default function App() {
         <h2 className="mt-6 mb-10 text-[9vw] md:text-5xl font-black italic text-yellow-500 tracking-widest text-center uppercase leading-none italic">
             {mode === 'pickup' ? '接機服務' : mode === 'dropoff' ? '送機服務' : '來回接送'}
         </h2>
-        <div className="w-full space-y-4 px-2 text-center">
+        <div className="w-full space-y-4 px-2">
           <button onClick={() => { setCarType('small'); navigateTo('form'); }} className="w-full bg-zinc-900 border border-zinc-800 p-8 md:p-10 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black active:bg-yellow-500 active:text-black transition-all group shadow-xl">
              <p className="text-2xl font-black mb-1 group-hover:text-black">小車直達 (5人座)</p>
-             <p className="text-white text-[11px] md:text-sm font-bold group-hover:text-black/70">乘客1-4人/行李1-3件/直達無加點/無其他需求</p>
+             <p className="text-white text-[11px] md:text-sm font-bold group-hover:text-black/70 tracking-tight text-left">乘客1-4人/行李1-3件/直達無加點/無其他需求</p>
           </button>
           <button onClick={() => { setCarType('large'); navigateTo('form'); }} className="w-full bg-zinc-900 border border-zinc-800 p-8 md:p-10 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black active:bg-yellow-500 active:text-black transition-all group shadow-xl">
              <p className="text-2xl font-black mb-1 group-hover:text-black">大車直達 (9人座)</p>
-             <p className="text-white text-[11px] md:text-sm font-bold group-hover:text-black/70">乘客5-8人/行李1-8件/直達無加點/無其他需求</p>
+             <p className="text-white text-[11px] md:text-sm font-bold group-hover:text-black/70 tracking-tight text-left">乘客5-8人/行李1-8件/直達無加點/無其他需求</p>
           </button>
           <a href="https://line.me/ti/p/@085qitid" target="_blank" className="w-full bg-zinc-900 border border-zinc-800 p-8 md:p-10 rounded-[40px] text-left block hover:bg-yellow-500 hover:text-black active:bg-yellow-500 active:text-black transition-all group shadow-xl">
              <p className="text-2xl font-black mb-1 group-hover:text-black italic">我真的不確定...</p>
-             <p className="text-white text-[11px] md:text-sm font-bold group-hover:text-black/70 italic leading-relaxed text-center">我有其他需求 / 加點上下車 / 舉牌 / 安全座椅等</p>
+             <p className="text-white text-[11px] md:text-sm font-bold group-hover:text-black/70 italic leading-relaxed text-left">我有其他需求 / 加點上下車 / 舉牌 / 安全座椅等</p>
           </a>
           <button onClick={() => window.history.back()} className="w-full text-white hover:text-black hover:bg-yellow-500 active:bg-yellow-500 active:text-black font-black py-10 rounded-[40px] tracking-widest text-xl uppercase transition-all active:scale-95 mt-4 text-center italic">返回上一步</button>
         </div>
@@ -102,43 +106,71 @@ export default function App() {
               讓客服人員來幫助您：）
             </p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] shadow-2xl space-y-8">
-            <h2 className="text-3xl font-black italic text-yellow-500 mb-2 uppercase tracking-widest text-center italic underline underline-offset-8 decoration-zinc-800">預約詳情</h2>
-            <div className="space-y-6">
-               {/* 修正：亮白、加大標籤字體 */}
-               <div className="space-y-2">
-                 <p className="text-base font-bold text-white ml-5 uppercase tracking-widest leading-none">日期</p>
-                 <input type="date" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all appearance-none shadow-inner" />
-               </div>
-               
-               {(mode === 'dropoff' || mode === 'both') && (
-                 <div className="space-y-2 animate-in slide-in-from-top-2">
-                   <p className="text-base font-bold text-white ml-5 uppercase tracking-widest leading-none">上車時間</p>
-                   <input type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all appearance-none shadow-inner" />
-                 </div>
-               )}
 
-               <div className="space-y-2">
-                 <p className="text-base font-bold text-white ml-5 uppercase tracking-widest leading-none">航班編號</p>
-                 <input type="text" placeholder="例如: JX58" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
-               </div>
-               <div className="space-y-2">
-                 <p className="text-base font-bold text-white ml-5 uppercase tracking-widest leading-none">{mode === 'pickup' ? '下車地址' : '上車地址'}</p>
-                 <input type="text" placeholder="請輸入完整街道地址" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
-               </div>
-               <div className="grid grid-cols-2 gap-4">
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] shadow-2xl space-y-10">
+            {/* --- 第一部分：基本資訊 (連動區) --- */}
+            <div className="space-y-6">
+               <h3 className="text-xl font-black text-yellow-500 italic uppercase tracking-wider flex items-center gap-2"><Users size={20}/> 聯絡資訊</h3>
+               <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
-                    <p className="text-base font-bold text-white ml-5 uppercase tracking-widest leading-none">姓名</p>
-                    <input type="text" placeholder="聯絡人" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
+                    <p className="text-base font-bold text-white ml-5 uppercase">姓名</p>
+                    <input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} type="text" placeholder="聯絡人姓名" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-base font-bold text-white ml-5 uppercase tracking-widest leading-none">電話</p>
-                    <input type="text" placeholder="0912..." className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
+                    <p className="text-base font-bold text-white ml-5 uppercase">電話</p>
+                    <input value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} type="text" placeholder="聯絡電話" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-base font-bold text-white ml-5 uppercase">地址 (您的位置)</p>
+                    <input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} type="text" placeholder="完整街道地址" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
                   </div>
                </div>
             </div>
+
+            <div className="h-px bg-zinc-800 w-full"></div>
+
+            {/* --- 第二部分：送機詳情 --- */}
+            {(mode === 'dropoff' || mode === 'both') && (
+              <div className="space-y-6">
+                 <h3 className="text-xl font-black text-white italic uppercase tracking-wider flex items-center gap-2"><Plane size={20}/> 送機行程 (第一趟)</h3>
+                 <div className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-base font-bold text-white ml-5 uppercase">送機日期</p>
+                      <input type="date" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all appearance-none shadow-inner" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-2">
+                         <p className="text-base font-bold text-white ml-5 uppercase">時間</p>
+                         <input type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all appearance-none shadow-inner" />
+                       </div>
+                       <div className="space-y-2">
+                         <p className="text-base font-bold text-white ml-5 uppercase">航班</p>
+                         <input type="text" placeholder="航班編號" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {/* --- 第三部分：接機詳情 --- */}
+            {(mode === 'pickup' || mode === 'both') && (
+              <div className="space-y-6">
+                 <h3 className="text-xl font-black text-white italic uppercase tracking-wider flex items-center gap-2"><ShieldCheck size={20}/> 接機行程 {mode === 'both' ? '(第二趟)' : ''}</h3>
+                 <div className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-base font-bold text-white ml-5 uppercase">降落日期</p>
+                      <input type="date" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all appearance-none shadow-inner" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-base font-bold text-white ml-5 uppercase">航班編號</p>
+                      <input type="text" placeholder="例如: JX58" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all shadow-inner" />
+                    </div>
+                 </div>
+              </div>
+            )}
+
             {paidStep === 'none' && (
-              <button onClick={() => setPaidStep('choice')} className="w-full mt-10 bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 shadow-xl shadow-yellow-500/20 transition-all">確認預約</button>
+              <button onClick={() => setPaidStep('choice')} className="w-full mt-6 bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 shadow-xl shadow-yellow-500/20 transition-all">確認預約</button>
             )}
           </div>
 
@@ -148,11 +180,9 @@ export default function App() {
                   <div className="inline-flex items-center gap-2 text-yellow-500 mb-2 font-black">
                      <ShieldCheck size={24}/> <h3 className="text-xl uppercase">待付款單成立</h3>
                   </div>
-                  <p className="text-zinc-500 text-xs font-bold tracking-widest uppercase">金額：<span className="text-white text-3xl font-black italic ml-1">${currentPrice.price}</span></p>
+                  <p className="text-zinc-500 text-xs font-bold tracking-widest uppercase">總應付金額：<span className="text-white text-3xl font-black italic ml-1">${currentPrice.price}</span></p>
                </div>
-               
                <div className="space-y-4">
-                  {/* 修正：亮白、加大的支付說明 */}
                   <p className="text-white text-sm font-black uppercase tracking-widest italic mb-2">請選擇支付方式</p>
                   <div className="space-y-3">
                     <button onClick={() => setPaidStep('transfer')} className={`w-full py-6 rounded-3xl font-black flex items-center justify-center gap-3 transition-all ${paidStep === 'transfer' ? 'bg-yellow-500 text-black shadow-xl' : 'bg-black border border-zinc-800 text-zinc-400 hover:text-white'}`}>
@@ -172,7 +202,7 @@ export default function App() {
                     {paidStep === 'card' && (
                       <div className="space-y-4 animate-in slide-in-from-top-4 text-center">
                         <p className="text-red-500 text-sm font-black animate-pulse tracking-widest uppercase">⚠️ 刷卡須另加收 3% 手續費</p>
-                        <a href={currentPrice.link} target="_blank" className="bg-white text-black py-5 rounded-2xl font-black block hover:bg-yellow-500 shadow-xl transition-all font-black text-sm italic uppercase">前往支付 (含手續費)</a>
+                        <a href={currentPrice.link} target="_blank" className="bg-white text-black py-5 rounded-2xl font-black block hover:bg-yellow-500 shadow-xl transition-all font-black text-sm italic uppercase text-center">前往支付 (含手續費)</a>
                       </div>
                     )}
                   </div>
