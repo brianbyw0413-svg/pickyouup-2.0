@@ -6,8 +6,6 @@ const supabase = createClient(
   'sb_publishable_SOp1vthQKdTdQUwoHsMIQA_FCTxzbie'
 );
 
-const TDX_PROXY_URL = 'https://vtvytcrkoqbluvczyepm.supabase.co/functions/v1/tdx-proxy';
-
 // ═══════════════════════════════════════════════════
 // 常數
 // ═══════════════════════════════════════════════════
@@ -17,10 +15,6 @@ const BASE_PRICING = {
   'large-dropoff': 1500,
   'small-pickup': 1300,
   'large-pickup': 1600,
-  'small-both-dropoff': 1200,
-  'small-both-pickup': 1300,
-  'large-both-dropoff': 1500,
-  'large-both-pickup': 1600,
 };
 
 const CREDIT_CARD_LINKS = {
@@ -49,7 +43,6 @@ const CREDIT_CARD_LINKS = {
 
 const LINE_OA_URL = 'https://line.me/R/oaMessage/%40085qitid/';
 const EMPTY_FORM = { name: '', phone: '', address: '', date: '', time: '', flight: '' };
-const LATE_NIGHT_SURCHARGE = 100;
 
 // ═══════════════════════════════════════════════════
 // 工具函式
@@ -73,31 +66,6 @@ const getModeLabel = (m) => {
 };
 
 const getCarLabel = (c) => (c === 'small' ? '小車 (5人座)' : '大車 (9人座)');
-
-// 深夜判定 (23:00~06:00)
-const isLateNight = (timeStr) => {
-  if (!timeStr) return false;
-  const h = parseInt(timeStr.split(':')[0], 10);
-  return h >= 23 || h < 6;
-};
-
-// 起飛前 3 小時
-const calcPickupTime = (departureTime) => {
-  if (!departureTime) return '';
-  const [h, m] = departureTime.split(':').map(Number);
-  let ph = h - 3;
-  if (ph < 0) ph += 24;
-  return `${String(ph).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-};
-
-// 從 TDX 時間字串提取 HH:mm
-const extractTime = (isoOrTime) => {
-  if (!isoOrTime) return '';
-  if (isoOrTime.includes('T')) {
-    return isoOrTime.split('T')[1]?.substring(0, 5) || '';
-  }
-  return isoOrTime.substring(0, 5);
-};
 
 // ═══════════════════════════════════════════════════
 // 共用元件
@@ -136,38 +104,6 @@ const Countdown = ({ createdAt }) => {
   );
 };
 
-// 航班資訊顯示
-const FlightInfoCard = ({ info, formMode }) => {
-  if (!info) return null;
-  const depTime = extractTime(info.ScheduleDepartureTime || info.departureTime);
-  const arrTime = extractTime(info.ScheduleArrivalTime || info.arrivalTime);
-  const terminal = info.Terminal || info.terminal || '';
-  const dest = info.ArrivalAirportID || info.arrival || '';
-  const origin = info.DepartureAirportID || info.departure || '';
-
-  return (
-    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 space-y-1">
-      <p className="text-yellow-500 font-black text-sm">航班資訊已取得</p>
-      {formMode === 'dropoff' ? (
-        <>
-          {depTime && <p className="text-white text-sm">起飛時間：<span className="font-bold">{depTime}</span></p>}
-          {dest && <p className="text-white text-sm">目的地：<span className="font-bold">{dest}</span></p>}
-          {terminal && <p className="text-white text-sm">航廈：<span className="font-bold">第 {terminal} 航廈</span></p>}
-          {depTime && <p className="text-zinc-400 text-xs">已自動填入建議上車時間（起飛前 3 小時）</p>}
-          {isLateNight(calcPickupTime(depTime)) && <p className="text-red-400 text-xs font-bold">深夜/清晨時段，將加收 $100 元</p>}
-        </>
-      ) : (
-        <>
-          {arrTime && <p className="text-white text-sm">降落時間：<span className="font-bold">{arrTime}</span></p>}
-          {origin && <p className="text-white text-sm">出發地：<span className="font-bold">{origin}</span></p>}
-          {terminal && <p className="text-white text-sm">航廈：<span className="font-bold">第 {terminal} 航廈</span></p>}
-          {isLateNight(arrTime) && <p className="text-red-400 text-xs font-bold">深夜/清晨時段，將加收 $100 元</p>}
-        </>
-      )}
-    </div>
-  );
-};
-
 // ═══════════════════════════════════════════════════
 // 主元件
 // ═══════════════════════════════════════════════════
@@ -187,11 +123,6 @@ export default function App() {
   const [dropoffForm, setDropoffForm] = useState({ ...EMPTY_FORM });
   const [pickupForm, setPickupForm] = useState({ ...EMPTY_FORM });
 
-  // 航班資訊
-  const [dropoffFlightInfo, setDropoffFlightInfo] = useState(null);
-  const [pickupFlightInfo, setPickupFlightInfo] = useState(null);
-  const [flightLoading, setFlightLoading] = useState(false);
-
   // ── 導覽 ──
   useEffect(() => {
     const handlePopState = (e) => setPage(e.state?.page || 'home');
@@ -206,65 +137,18 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  // ── 航班查詢 ──
-  const lookupFlight = async (flightNumber, date, formMode) => {
-    if (!flightNumber || flightNumber.length < 3 || !date) return;
-    setFlightLoading(true);
-    try {
-      const res = await fetch(
-        `${TDX_PROXY_URL}?flight=${encodeURIComponent(flightNumber.trim().toUpperCase())}&date=${date}`
-      );
-      if (!res.ok) throw new Error('API error');
-      const data = await res.json();
-
-      if (formMode === 'dropoff') {
-        setDropoffFlightInfo(data);
-        const depTime = extractTime(data.ScheduleDepartureTime || data.departureTime);
-        if (depTime) {
-          const pickup = calcPickupTime(depTime);
-          setDropoffForm((prev) => ({ ...prev, time: pickup }));
-        }
-      } else {
-        setPickupFlightInfo(data);
-      }
-    } catch (err) {
-      console.error('航班查詢失敗:', err);
-      if (formMode === 'dropoff') setDropoffFlightInfo(null);
-      else setPickupFlightInfo(null);
-    }
-    setFlightLoading(false);
-  };
-
-  // ── 深夜加成計算 ──
-  const getDropoffSurcharge = () => {
-    if (!dropoffForm.time) return 0;
-    return isLateNight(dropoffForm.time) ? LATE_NIGHT_SURCHARGE : 0;
-  };
-
-  const getPickupSurcharge = () => {
-    const arrTime = extractTime(
-      pickupFlightInfo?.ScheduleArrivalTime || pickupFlightInfo?.arrivalTime
-    );
-    if (!arrTime) return 0;
-    return isLateNight(arrTime) ? LATE_NIGHT_SURCHARGE : 0;
-  };
-
   // ── 價格計算 ──
   const dropoffBase = BASE_PRICING[`${carType}-dropoff`] || 0;
   const pickupBase = BASE_PRICING[`${carType}-pickup`] || 0;
-  const dropoffSurcharge = getDropoffSurcharge();
-  const pickupSurcharge = getPickupSurcharge();
 
   const calcTotal = () => {
-    if (mode === 'dropoff') return dropoffBase + dropoffSurcharge;
-    if (mode === 'pickup') return pickupBase + pickupSurcharge;
-    if (mode === 'both') return dropoffBase + dropoffSurcharge + pickupBase + pickupSurcharge;
+    if (mode === 'dropoff') return dropoffBase;
+    if (mode === 'pickup') return pickupBase;
+    if (mode === 'both') return dropoffBase + pickupBase;
     return 0;
   };
 
   const totalPrice = calcTotal();
-  const dropoffTotal = dropoffBase + dropoffSurcharge;
-  const pickupTotal = pickupBase + pickupSurcharge;
 
   // ── 表單驗證 ──
   const validateForm = (form, formMode) => {
@@ -289,8 +173,6 @@ export default function App() {
     setErrors({});
     setOrderRef('');
     setOrderCreatedAt(null);
-    setDropoffFlightInfo(null);
-    setPickupFlightInfo(null);
   };
 
   const copyAccount = async () => {
@@ -326,7 +208,7 @@ export default function App() {
     navigateTo('confirm');
   };
 
-  // ── 提交訂單 (方案B：統一新欄位名) ──
+  // ── 提交訂單 ──
   const handleBooking = async () => {
     setIsSubmitting(true);
     const ref = generateOrderRef();
@@ -344,7 +226,7 @@ export default function App() {
         service_date: dropoffForm.date,
         pickup_time: dropoffForm.time,
         flight_number: dropoffForm.flight.trim().toUpperCase(),
-        amount: mode === 'both' ? dropoffTotal : totalPrice,
+        amount: mode === 'both' ? dropoffBase : totalPrice,
         total_amount: totalPrice,
         status: 'pending',
         payment_method: '',
@@ -361,9 +243,9 @@ export default function App() {
         pickup_address: '',
         dropoff_address: pickupForm.address.trim(),
         service_date: pickupForm.date,
-        pickup_time: extractTime(pickupFlightInfo?.ScheduleArrivalTime || pickupFlightInfo?.arrivalTime) || '',
+        pickup_time: '',
         flight_number: pickupForm.flight.trim().toUpperCase(),
-        amount: mode === 'both' ? pickupTotal : totalPrice,
+        amount: mode === 'both' ? pickupBase : totalPrice,
         total_amount: totalPrice,
         status: 'pending',
         payment_method: '',
@@ -465,7 +347,6 @@ export default function App() {
     const currentForm = isPickupStep ? pickupForm : dropoffForm;
     const setForm = isPickupStep ? setPickupForm : setDropoffForm;
     const currentMode = isPickupStep ? 'pickup' : 'dropoff';
-    const currentFlightInfo = isPickupStep ? pickupFlightInfo : dropoffFlightInfo;
 
     const handleNextStep = () => {
       const errs = validateForm(dropoffForm, 'dropoff');
@@ -480,12 +361,6 @@ export default function App() {
       window.scrollTo(0, 0);
     };
 
-    const handleFlightLookup = () => {
-      if (currentForm.flight && currentForm.date) {
-        lookupFlight(currentForm.flight, currentForm.date, currentMode);
-      }
-    };
-
     return (
       <Layout>
         <div className="mt-4 space-y-6 pb-24 px-2">
@@ -495,55 +370,35 @@ export default function App() {
             </h2>
 
             <div className="space-y-6 text-left">
-              {/* 姓名 */}
               <div>
                 <input value={currentForm.name} onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }} type="text" placeholder="聯絡人姓名" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
                 <FieldError message={errors.name} />
               </div>
 
-              {/* 電話 */}
               <div>
                 <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
                 <FieldError message={errors.phone} />
               </div>
 
-              {/* 日期 */}
               <div className="space-y-1">
                 <p className="text-sm font-bold ml-5">{currentMode === 'pickup' ? '抵達日期' : '出發日期'}</p>
                 <input value={currentForm.date} onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }} type="date" min={getTodayString()} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
                 <FieldError message={errors.date} />
               </div>
 
-              {/* 航班編號 + 查詢按鈕 */}
-              <div className="space-y-1">
-                <p className="text-sm font-bold ml-5">航班編號</p>
-                <div className="flex gap-2">
-                  <input value={currentForm.flight} onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }} type="text" placeholder="例如: BR001" className="flex-1 bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 uppercase" />
-                  <button
-                    onClick={handleFlightLookup}
-                    disabled={flightLoading || !currentForm.flight || !currentForm.date}
-                    className={`px-5 rounded-2xl font-bold text-sm transition-all ${flightLoading || !currentForm.flight || !currentForm.date ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-yellow-500 text-black hover:bg-yellow-400 active:scale-95'}`}
-                  >
-                    {flightLoading ? '查詢中...' : '查詢'}
-                  </button>
-                </div>
+              <div>
+                <input value={currentForm.flight} onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }} type="text" placeholder="航班編號（例如: BR001）" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 uppercase" />
                 <FieldError message={errors.flight} />
               </div>
 
-              {/* 航班資訊卡片 */}
-              <FlightInfoCard info={currentFlightInfo} formMode={currentMode} />
-
-              {/* 上車時間 (僅送機) */}
               {currentMode === 'dropoff' && (
                 <div className="space-y-1">
-                  <p className="text-sm font-bold ml-5">上車時間 {currentFlightInfo ? '(已自動填入)' : ''}</p>
+                  <p className="text-sm font-bold ml-5">上車時間</p>
                   <input value={currentForm.time} onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }} type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
                   <FieldError message={errors.time} />
-                  {isLateNight(currentForm.time) && <p className="text-red-400 text-xs font-bold ml-2">深夜/清晨時段加收 $100</p>}
                 </div>
               )}
 
-              {/* 地址 */}
               <div>
                 <input value={currentForm.address} onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }} type="text" placeholder={currentMode === 'pickup' ? '下車詳細地址' : '上車詳細地址'} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
                 <FieldError message={errors.address} />
@@ -571,10 +426,10 @@ export default function App() {
   // 頁面：確認明細
   // ═══════════════════════════════════════════════════
   if (page === 'confirm') {
-    const SummaryRow = ({ label, value, highlight }) => (
+    const SummaryRow = ({ label, value }) => (
       <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
         <span className="text-zinc-400 text-sm">{label}</span>
-        <span className={`font-bold ${highlight ? 'text-red-400' : ''}`}>{value}</span>
+        <span className="font-bold">{value}</span>
       </div>
     );
 
@@ -594,9 +449,7 @@ export default function App() {
                 <SummaryRow label="上車時間" value={dropoffForm.time} />
                 <SummaryRow label="上車地址" value={dropoffForm.address} />
                 <SummaryRow label="車型" value={getCarLabel(carType)} />
-                <SummaryRow label="基本車資" value={`$${dropoffBase}`} />
-                {dropoffSurcharge > 0 && <SummaryRow label="深夜加成" value={`+$${dropoffSurcharge}`} highlight />}
-                {mode !== 'both' && <SummaryRow label="小計" value={`$${totalPrice}`} />}
+                <SummaryRow label="車資" value={`$${dropoffBase}`} />
               </div>
             )}
 
@@ -607,20 +460,16 @@ export default function App() {
                 <SummaryRow label="電話" value={pickupForm.phone} />
                 <SummaryRow label="日期" value={pickupForm.date} />
                 <SummaryRow label="航班" value={pickupForm.flight} />
-                {pickupFlightInfo && <SummaryRow label="降落時間" value={extractTime(pickupFlightInfo.ScheduleArrivalTime || pickupFlightInfo.arrivalTime)} />}
                 <SummaryRow label="下車地址" value={pickupForm.address} />
                 <SummaryRow label="車型" value={getCarLabel(carType)} />
-                <SummaryRow label="基本車資" value={`$${pickupBase}`} />
-                {pickupSurcharge > 0 && <SummaryRow label="深夜加成" value={`+$${pickupSurcharge}`} highlight />}
-                {mode !== 'both' && <SummaryRow label="小計" value={`$${totalPrice}`} />}
+                <SummaryRow label="車資" value={`$${pickupBase}`} />
               </div>
             )}
 
             <div className="mt-8 pt-6 border-t-2 border-yellow-500/30 text-center">
               <p className="text-zinc-400 text-sm font-bold mb-2">合計金額</p>
               <p className="text-5xl font-black italic text-yellow-500">${totalPrice}</p>
-              {mode === 'both' && <p className="text-xs text-zinc-500 mt-2">(送機 ${dropoffTotal} + 接機 ${pickupTotal})</p>}
-              {(dropoffSurcharge > 0 || pickupSurcharge > 0) && <p className="text-xs text-red-400 mt-1">含深夜加成 ${dropoffSurcharge + pickupSurcharge}</p>}
+              {mode === 'both' && <p className="text-xs text-zinc-500 mt-2">(送機 ${dropoffBase} + 接機 ${pickupBase})</p>}
             </div>
 
             <div className="mt-8">
