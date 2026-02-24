@@ -13,6 +13,7 @@ const supabase = createClient(
 
 const LIFF_ID = '2009218677-iJIIF1oj';
 const LINE_ID_ID = '@835acfgq';
+// 修正：oaMessage 需要編碼後的 @ (即 %40)，確保訊息能帶入
 const LINE_OA_URL = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID_ID)}/`;
 
 const BASE_PRICING = {
@@ -57,17 +58,17 @@ const isValidPhone = (phone) => /^09\d{8}$/.test(phone.replace(/[-\s]/g, ''));
 
 const formatLiffPhone = (phone) => {
   if (!phone) return '';
-  // 先清掉所有非數字
-  let cleaned = phone.replace(/[^\d]/g, '');
-  // 處理 886 開頭
-  if (cleaned.startsWith('8869')) {
-    return '0' + cleaned.slice(3);
+  // 強力修正：先去掉所有非數字字元
+  let digits = phone.replace(/\D/g, '');
+  // 如果是 886 開頭且後面還有 9 碼以上（台灣手機 9xxxxxxx 共 9 碼）
+  if (digits.startsWith('886') && digits.length >= 12) {
+    return '0' + digits.slice(3);
   }
-  // 處理已是 09 開頭但可能有雜訊
-  if (cleaned.startsWith('09')) {
-    return cleaned.slice(0, 10);
+  // 如果是 09 開頭
+  if (digits.startsWith('09')) {
+    return digits.slice(0, 10);
   }
-  return cleaned;
+  return digits;
 };
 
 const generateOrderRef = () => {
@@ -147,7 +148,6 @@ export default function App() {
     liff.init({ liffId: LIFF_ID })
       .then(() => {
         if (liff.isLoggedIn()) {
-          // 嘗試取得 Profile 與 Phone
           Promise.all([
             liff.getProfile(),
             liff.getPhoneNumber().catch(() => null)
@@ -254,7 +254,7 @@ export default function App() {
     navigateTo('confirm');
   };
 
-  // ── 提交訂單 (方案B：統一新欄位名) ──
+  // ── 提交訂單 ──
   const handleBooking = async () => {
     setIsSubmitting(true);
     const ref = generateOrderRef();
@@ -266,7 +266,7 @@ export default function App() {
         service_mode: 'dropoff',
         car_type: carType,
         contact_name: dropoffForm.name.trim(),
-        contact_phone: dropoffForm.phone.replace(/[-\s]/g, ''),
+        contact_phone: dropoffForm.phone.replace(/\D/g, ''),
         pickup_address: dropoffForm.address.trim(),
         dropoff_address: '',
         service_date: dropoffForm.date,
@@ -285,7 +285,7 @@ export default function App() {
         service_mode: 'pickup',
         car_type: carType,
         contact_name: pickupForm.name.trim(),
-        contact_phone: pickupForm.phone.replace(/[-\s]/g, ''),
+        contact_phone: pickupForm.phone.replace(/\D/g, ''),
         pickup_address: '',
         dropoff_address: pickupForm.address.trim(),
         service_date: pickupForm.date,
@@ -378,7 +378,8 @@ export default function App() {
             <div className="text-xl font-black">大車直達 (9人座)</div>
             <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-8人 / 行李1-8件 / 直達無加點</div>
           </button>
-          <a href={`https://line.me/ti/p/~${LINE_ID_ID.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
+          {/* 修正：不確定按鈕改回使用完整包含 @ 的 ID */}
+          <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
             <div className="text-zinc-400 text-sm">我真的不確定...</div>
             <div className="text-yellow-500 font-bold">需要人工報價 / 安全座椅 / 多點加停</div>
           </a>
@@ -427,7 +428,7 @@ export default function App() {
               </div>
 
               <div>
-                <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/\D/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
                 <FieldError message={errors.phone} />
               </div>
 
@@ -569,7 +570,7 @@ export default function App() {
               {ccLink ? (
                 <button onClick={() => window.open(ccLink, '_blank')} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">信用卡付款 (須加 3% 手續費)</button>
               ) : (
-                <a href={`https://line.me/ti/p/~${LINE_ID_ID.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">刷卡請聯繫客服安排</a>
+                <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">刷卡請聯繫客服安排</a>
               )}
               <button onClick={handleDone} className="w-full bg-green-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">已付款，通知官方對帳</button>
             </div>
