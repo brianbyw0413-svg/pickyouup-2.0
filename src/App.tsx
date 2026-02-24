@@ -80,7 +80,7 @@ export default function App() {
 
   const handleFlightBlur = async (f, target) => {
     if (!f || f.length < 4) return;
-    setFlightHint("正在連線交通部 TDX 查詢航班...🐶");
+    setFlightHint("正在為您查詢航班資訊...🐶");
     
     try {
       const response = await fetch("https://vtvytcrkoqbluvczyepm.supabase.co/functions/v1/tdx-proxy", {
@@ -123,6 +123,7 @@ export default function App() {
     if (mode === 'pickup' || mode === 'both') {
       orders.push({ ...pickupForm, mode: 'pickup', car_type: carType, amount: mode === 'both' ? total/2 : total, status: 'pending' });
     }
+
     const { error } = await supabase.from('orders').insert(orders);
     if (!error) {
       setPaidStep('choice');
@@ -210,16 +211,16 @@ export default function App() {
                  {flightHint && <p className="text-xs text-yellow-500 ml-5 font-black animate-pulse">✨ {flightHint}</p>}
               </div>
               {((isBoth && bothStep === 1) || mode === 'dropoff') && (<div className="space-y-1"><p className="text-sm font-bold ml-5">上車時間</p><input value={currentForm.time} onChange={(e)=>setForm({...currentForm, time:e.target.value})} type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none" /></div>)}
-              <input value={currentForm.address} onChange={(e)=>setForm({...currentForm, address:e.target.value})} type="text" placeholder={((isBoth && bothStep === 2) || mode === 'pickup') ? '下車地址' : '上車地址'} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+              <input value={currentForm.address} onChange={(e)=>setForm({...currentForm, address:e.target.value})} type="text" placeholder={((isBoth && bothStep === 2) || mode === 'pickup') ? '下車詳情地址' : '上車詳情地址'} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
             </div>
 
             <div className="mt-8 pt-8 border-t border-zinc-800 text-center space-y-2">
                {showPrice && <p className="text-5xl font-black italic text-yellow-500 animate-in zoom-in-90 duration-500">${total}</p>}
                {paidStep === 'none' && (
                  isBoth && bothStep === 1 ? (
-                   <button onClick={() => { setPickupForm(prev => ({...prev, name: dropoffForm.name, phone: dropoffForm.phone, address: dropoffForm.address })); setBothStep(2); window.scrollTo(0,0); }} className="w-full mt-6 bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400">下一步：填寫接機資訊</button>
+                   <button onClick={() => { setPickupForm(prev => ({...prev, name: dropoffForm.name, phone: dropoffForm.phone, address: dropoffForm.address })); setBothStep(2); window.scrollTo(0,0); }} className="w-full mt-6 bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 shadow-xl">下一步：填寫接機資訊</button>
                  ) : (
-                   <button disabled={isSubmitting || !showPrice} onClick={handleBooking} className={`w-full mt-6 py-6 rounded-[24px] font-black text-xl shadow-xl transition-all ${isSubmitting || !showPrice ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-yellow-500 text-black hover:bg-yellow-400'}`}>{isSubmitting?'處理中...':'確認預約'}</button>
+                   <button disabled={isSubmitting || !showPrice} onClick={handleBooking} className={`w-full mt-6 py-6 rounded-[24px] font-black text-xl shadow-xl transition-all ${isSubmitting || !showPrice ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-yellow-500 text-black hover:bg-yellow-400 active:scale-95'}`}>{isSubmitting?'處理中...':'確認預約'}</button>
                  )
                )}
             </div>
