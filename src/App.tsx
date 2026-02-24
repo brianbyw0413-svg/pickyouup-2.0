@@ -9,6 +9,7 @@ const supabase = createClient(
 // ═══════════════════════════════════════════════════
 // 常數
 // ═══════════════════════════════════════════════════
+
 const PRICING = {
   'small-dropoff': 1200,
   'large-dropoff': 1500,
@@ -43,12 +44,15 @@ const CREDIT_CARD_LINKS = {
 };
 
 const LINE_OA_URL = 'https://line.me/R/oaMessage/%40085qitid/';
+
 const EMPTY_FORM = { name: '', phone: '', address: '', date: '', time: '', flight: '' };
 
 // ═══════════════════════════════════════════════════
 // 工具函式
 // ═══════════════════════════════════════════════════
+
 const getTodayString = () => new Date().toISOString().slice(0, 10);
+
 const isValidPhone = (phone) => /^09\d{8}$/.test(phone.replace(/[-\s]/g, ''));
 
 const generateOrderRef = () => {
@@ -68,33 +72,9 @@ const getModeLabel = (m) => {
 const getCarLabel = (c) => (c === 'small' ? '小車 (5人座)' : '大車 (9人座)');
 
 // ═══════════════════════════════════════════════════
-// SVG 圖示
-// ═══════════════════════════════════════════════════
-const SvgCheck = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
-
-const SvgCopy = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-  </svg>
-);
-
-const SvgAlert = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="12" y1="8" x2="12" y2="12"></line>
-    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-  </svg>
-);
-
-// ═══════════════════════════════════════════════════
 // 共用 Layout
 // ═══════════════════════════════════════════════════
+
 const Layout = ({ children }) => (
   <div className="min-h-screen bg-[#0a0a0c] text-white p-4 flex flex-col items-center overflow-x-hidden relative font-sans">
     <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none"></div>
@@ -105,17 +85,21 @@ const Layout = ({ children }) => (
 // ═══════════════════════════════════════════════════
 // 驗證錯誤提示元件
 // ═══════════════════════════════════════════════════
-const FieldError = ({ message }) => message ? (
-  <div className="flex items-center gap-1 mt-1 text-red-400 text-sm font-bold">
-    <SvgAlert /> {message}
-  </div>
-) : null;
+
+const FieldError = ({ message }) =>
+  message ? (
+    <div className="flex items-center gap-1 mt-1 text-red-400 text-sm font-bold">
+      {message}
+    </div>
+  ) : null;
 
 // ═══════════════════════════════════════════════════
 // 倒數計時元件 (2小時付款時限)
 // ═══════════════════════════════════════════════════
+
 const Countdown = ({ createdAt }) => {
   const [remaining, setRemaining] = useState('');
+
   useEffect(() => {
     const deadline = createdAt + 2 * 60 * 60 * 1000;
     const tick = () => {
@@ -133,9 +117,10 @@ const Countdown = ({ createdAt }) => {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [createdAt]);
+
   return (
     <p className={`text-sm font-bold ${remaining === '已逾時' ? 'text-red-400' : 'text-zinc-400'}`}>
-      ⏱ 付款時限：{remaining}
+      付款時限：{remaining}
     </p>
   );
 };
@@ -143,6 +128,7 @@ const Countdown = ({ createdAt }) => {
 // ═══════════════════════════════════════════════════
 // 主元件
 // ═══════════════════════════════════════════════════
+
 export default function App() {
   const [page, setPage] = useState('home');
   const [carType, setCarType] = useState('');
@@ -173,7 +159,12 @@ export default function App() {
 
   const dropoffPrice = PRICING[`${carType}-dropoff`] || 0;
   const pickupPrice = PRICING[`${carType}-pickup`] || 0;
-  const totalPrice = mode === 'both' ? PRICING[`${carType}-both`] || 0 : mode === 'pickup' ? pickupPrice : dropoffPrice;
+  const totalPrice =
+    mode === 'both'
+      ? PRICING[`${carType}-both`] || 0
+      : mode === 'pickup'
+      ? pickupPrice
+      : dropoffPrice;
 
   const validateForm = (form, formMode) => {
     const errs = {};
@@ -183,7 +174,7 @@ export default function App() {
     if (!form.date) errs.date = '請選擇日期';
     else if (form.date < getTodayString()) errs.date = '日期不可選擇過去的日期';
     if (!form.flight.trim()) errs.flight = '請輸入航班編號';
-    if (!form.address.trim()) errs.address = formMode === 'pickup' ? '請輸入下手詳細地址' : '請輸入上車詳細地址';
+    if (!form.address.trim()) errs.address = formMode === 'pickup' ? '請輸入下車詳細地址' : '請輸入上車詳細地址';
     if (formMode === 'dropoff' && !form.time) errs.time = '請選擇上車時間';
     return errs;
   };
@@ -263,7 +254,7 @@ export default function App() {
 
     if (mode === 'pickup' || mode === 'both') {
       orders.push({
-        order_ref: mode === 'both' ? ref : ref,
+        order_ref: ref,
         service_mode: 'pickup',
         car_type: carType,
         contact_name: pickupForm.name.trim(),
@@ -282,7 +273,6 @@ export default function App() {
     }
 
     const { error } = await supabase.from('orders').insert(orders);
-
     if (!error) {
       setOrderRef(ref);
       setOrderCreatedAt(Date.now());
@@ -292,7 +282,6 @@ export default function App() {
       alert('預約暫時無法提交，請稍後再試。');
       console.error('Supabase error:', error);
     }
-
     setIsSubmitting(false);
   };
 
@@ -308,7 +297,7 @@ export default function App() {
       `總計：$${totalPrice} 元`,
       ``,
       `您好，我已完成付款，請幫我確認。`,
-    ].join('\n');
+    ].join(' ');
 
     window.open(LINE_OA_URL + encodeURIComponent(summary), '_blank');
     resetAll();
@@ -322,55 +311,81 @@ export default function App() {
   };
 
   // 頁面：首頁
-  if (page === 'home') return (
-    <Layout>
-      <div className="text-center mt-12 mb-8">
-        <h1 className="text-5xl font-black italic text-yellow-500">PickYouUP.tw</h1>
-        <p className="text-zinc-400 mt-2 font-bold">快速預約 專業接送</p>
-      </div>
-
-      <div className="space-y-4">
-        <button onClick={() => { setMode('dropoff'); navigateTo('choice'); }} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl transition-all shadow-xl">
-          ✈️ 我要送機
-        </button>
-        <button onClick={() => { setMode('pickup'); navigateTo('choice'); }} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl transition-all shadow-xl">
-          🛬 我要接機
-        </button>
-        <button onClick={() => { setMode('both'); navigateTo('choice'); }} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl shadow-xl transition-all">
-          🔄 接送機一併預約
-        </button>
-      </div>
-    </Layout>
-  );
+  if (page === 'home')
+    return (
+      <Layout>
+        <nav className="w-full py-8 mb-12 flex justify-center border-b border-white/5">
+          <h1 className="text-3xl font-black text-yellow-500 uppercase">PICKYOUUP.TW</h1>
+        </nav>
+        <div className="w-full text-center space-y-6 animate-in fade-in duration-1000 uppercase font-black italic">
+          <h2 className="text-[11vw] md:text-6xl mb-16 tracking-tighter">
+            快速預約
+            <br />
+            <span className="text-yellow-500">專業接送</span>
+          </h2>
+          <div className="space-y-4 px-2 not-italic">
+            <button
+              onClick={() => { setMode('dropoff'); navigateTo('choice'); }}
+              className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl transition-all shadow-xl"
+            >
+              我要送機
+            </button>
+            <button
+              onClick={() => { setMode('pickup'); navigateTo('choice'); }}
+              className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl transition-all shadow-xl"
+            >
+              我要接機
+            </button>
+            <button
+              onClick={() => { setMode('both'); navigateTo('choice'); }}
+              className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl shadow-xl transition-all"
+            >
+              接送一併預訂
+            </button>
+          </div>
+          <p className="text-[10px] text-yellow-500/40 tracking-[0.3em] mt-12 not-italic font-bold">PREMIUM SERVICE SINCE 2026</p>
+        </div>
+      </Layout>
+    );
 
   // 頁面：選擇車型
-  if (page === 'choice') return (
-    <Layout>
-      <div className="mt-8 mb-6">
-        <h2 className="text-3xl font-black italic text-yellow-500 text-center uppercase">{getModeLabel(mode)}</h2>
-        <p className="text-center text-zinc-400 mt-2">請選擇車型</p>
-      </div>
-      <div className="space-y-4">
-        <button onClick={() => { setCarType('small'); navigateTo('form'); }} className="w-full bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black transition-all group shadow-xl">
-          <div className="text-3xl mb-2">🚗</div>
-          <div className="text-xl font-black">小車直達 (5人座)</div>
-          <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-4人 / 行李1-3件 / 直達無加點</div>
-        </button>
-        <button onClick={() => { setCarType('large'); navigateTo('form'); }} className="w-full bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black transition-all group shadow-xl">
-          <div className="text-3xl mb-2">🚐</div>
-          <div className="text-xl font-black">大車直達 (9人座)</div>
-          <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-8人 / 行李1-8件 / 直達無加點</div>
-        </button>
-        <a href="https://line.me/ti/p/~@085qitid" target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
-          <div className="text-zinc-400 text-sm">我真的不確定...</div>
-          <div className="text-yellow-500 font-bold">需要人工報價 / 安全座椅 / 多點加停</div>
-        </a>
-      </div>
-      <div className="flex justify-center w-full py-4">
-        <button onClick={() => window.history.back()} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all">← 回上一頁</button>
-      </div>
-    </Layout>
-  );
+  if (page === 'choice')
+    return (
+      <Layout>
+        <div className="mt-8 mb-6">
+          <h2 className="text-3xl font-black italic text-yellow-500 text-center uppercase">{getModeLabel(mode)}</h2>
+          <p className="text-center text-zinc-400 mt-2">請選擇車型</p>
+        </div>
+        <div className="space-y-4">
+          <button
+            onClick={() => { setCarType('small'); navigateTo('form'); }}
+            className="w-full bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black transition-all group shadow-xl"
+          >
+            <div className="text-xl font-black">小車直達 (5人座)</div>
+            <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-4人 / 行李1-3件 / 直達無加點</div>
+          </button>
+          <button
+            onClick={() => { setCarType('large'); navigateTo('form'); }}
+            className="w-full bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black transition-all group shadow-xl"
+          >
+            <div className="text-xl font-black">大車直達 (9人座)</div>
+            <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-8人 / 行李1-8件 / 直達無加點</div>
+          </button>
+          <a
+            href="https://line.me/ti/p/~@085qitid"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all"
+          >
+            <div className="text-zinc-400 text-sm">我真的不確定...</div>
+            <div className="text-yellow-500 font-bold">需要人工報價 / 安全座椅 / 多點加停</div>
+          </a>
+        </div>
+        <div className="flex justify-center w-full py-4">
+          <button onClick={() => window.history.back()} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all">回上一頁</button>
+        </div>
+      </Layout>
+    );
 
   // 頁面：填寫表單
   if (page === 'form') {
@@ -382,9 +397,16 @@ export default function App() {
 
     const handleNextStep = () => {
       const errs = validateForm(dropoffForm, 'dropoff');
-      if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+      if (Object.keys(errs).length > 0) {
+        setErrors(errs);
+        return;
+      }
       setErrors({});
-      setPickupForm((prev) => ({ ...prev, name: prev.name || dropoffForm.name, phone: prev.phone || dropoffForm.phone }));
+      setPickupForm((prev) => ({
+        ...prev,
+        name: prev.name || dropoffForm.name,
+        phone: prev.phone || dropoffForm.phone,
+      }));
       setBothStep(2);
       window.scrollTo(0, 0);
     };
@@ -394,51 +416,126 @@ export default function App() {
         <div className="mt-4 space-y-6 pb-24 px-2">
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] shadow-2xl space-y-10 text-white">
             <h2 className="text-3xl font-black italic text-yellow-500 text-center uppercase underline underline-offset-8 decoration-zinc-800">
-              {isBoth ? (bothStep === 1 ? '第一步：送機詳情' : '第二步：接機詳情') : (currentMode === 'pickup' ? '接機預約詳情' : '送機預約詳情')}
+              {isBoth
+                ? bothStep === 1
+                  ? '第一步：送機詳情'
+                  : '第二步：接機詳情'
+                : currentMode === 'pickup'
+                ? '接機預約詳情'
+                : '送機預約詳情'}
             </h2>
 
             <div className="space-y-6 text-left">
               <div>
-                <input value={currentForm.name} onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }} type="text" placeholder="聯絡人姓名" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input
+                  value={currentForm.name}
+                  onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }}
+                  type="text"
+                  placeholder="聯絡人姓名"
+                  className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500"
+                />
                 <FieldError message={errors.name} />
               </div>
+
               <div>
-                <input value={currentForm.phone} onChange={(e) => { const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={10} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input
+                  value={currentForm.phone}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 10);
+                    setForm({ ...currentForm, phone: raw });
+                    setErrors((p) => ({ ...p, phone: '' }));
+                  }}
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="聯絡電話（09 開頭）"
+                  maxLength={10}
+                  className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500"
+                />
                 <FieldError message={errors.phone} />
               </div>
+
               <div className="space-y-1">
                 <p className="text-sm font-bold ml-5">{currentMode === 'pickup' ? '抵達日期' : '出發日期'}</p>
-                <input value={currentForm.date} onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }} type="date" min={getTodayString()} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input
+                  value={currentForm.date}
+                  onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }}
+                  type="date"
+                  min={getTodayString()}
+                  className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500"
+                />
                 <FieldError message={errors.date} />
               </div>
+
               <div className="space-y-1">
                 <p className="text-sm font-bold ml-5">航班編號</p>
-                <input value={currentForm.flight} onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }} type="text" placeholder="例如: JX713" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 uppercase" />
+                <input
+                  value={currentForm.flight}
+                  onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }}
+                  type="text"
+                  placeholder="例如: JX713"
+                  className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 uppercase"
+                />
                 <FieldError message={errors.flight} />
               </div>
+
               {currentMode === 'dropoff' && (
                 <div className="space-y-1">
                   <p className="text-sm font-bold ml-5">上車時間</p>
-                  <input value={currentForm.time} onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }} type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                  <input
+                    value={currentForm.time}
+                    onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }}
+                    type="time"
+                    className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500"
+                  />
                   <FieldError message={errors.time} />
                 </div>
               )}
+
               <div>
-                <input value={currentForm.address} onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }} type="text" placeholder={currentMode === 'pickup' ? '下手詳細地址' : '上車詳細地址'} className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500" />
+                <input
+                  value={currentForm.address}
+                  onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }}
+                  type="text"
+                  placeholder={currentMode === 'pickup' ? '下車詳細地址' : '上車詳細地址'}
+                  className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500"
+                />
                 <FieldError message={errors.address} />
               </div>
             </div>
 
             <div className="mt-8 pt-8 border-t border-zinc-800 text-center">
               {isBoth && bothStep === 1 ? (
-                <button onClick={handleNextStep} className="w-full bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 transition-all">下一步：填寫接機資訊 →</button>
+                <button
+                  onClick={handleNextStep}
+                  className="w-full bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 transition-all"
+                >
+                  下一步：填寫接機資訊
+                </button>
               ) : (
-                <button onClick={handleGoToConfirm} className="w-full bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 transition-all">確認明細 →</button>
+                <button
+                  onClick={handleGoToConfirm}
+                  className="w-full bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 transition-all"
+                >
+                  確認明細
+                </button>
               )}
             </div>
           </div>
+
           <div className="flex justify-center w-full py-4">
-            <button onClick={() => { if (isBoth && bothStep === 2) { setBothStep(1); setErrors({}); } else { window.history.back(); } }} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all italic">← 回上一頁</button>
+            <button
+              onClick={() => {
+                if (isBoth && bothStep === 2) {
+                  setBothStep(1);
+                  setErrors({});
+                } else {
+                  window.history.back();
+                }
+              }}
+              className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all italic"
+            >
+              回上一頁
+            </button>
           </div>
         </div>
       </Layout>
@@ -458,11 +555,11 @@ export default function App() {
       <Layout>
         <div className="mt-4 space-y-4 pb-24 px-2">
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] shadow-2xl text-white">
-            <h2 className="text-2xl font-black italic text-yellow-500 text-center uppercase mb-8">📋 請確認預約明細</h2>
+            <h2 className="text-2xl font-black italic text-yellow-500 text-center uppercase mb-8">請確認預約明細</h2>
 
             {(mode === 'dropoff' || mode === 'both') && (
               <div className="mb-6">
-                {mode === 'both' && <p className="text-yellow-500 font-black text-sm mb-3 uppercase">✈️ 送機</p>}
+                {mode === 'both' && <p className="text-yellow-500 font-black text-sm mb-3 uppercase">送機</p>}
                 <SummaryRow label="聯絡人" value={dropoffForm.name} />
                 <SummaryRow label="電話" value={dropoffForm.phone} />
                 <SummaryRow label="日期" value={dropoffForm.date} />
@@ -476,12 +573,14 @@ export default function App() {
 
             {(mode === 'pickup' || mode === 'both') && (
               <div className="mb-6">
-                {mode === 'both' && <p className="text-yellow-500 font-black text-sm mb-3 uppercase mt-6 pt-6 border-t border-zinc-700">🛬 接機</p>}
+                {mode === 'both' && (
+                  <p className="text-yellow-500 font-black text-sm mb-3 uppercase mt-6 pt-6 border-t border-zinc-700">接機</p>
+                )}
                 <SummaryRow label="聯絡人" value={pickupForm.name} />
                 <SummaryRow label="電話" value={pickupForm.phone} />
                 <SummaryRow label="日期" value={pickupForm.date} />
                 <SummaryRow label="航班" value={pickupForm.flight} />
-                <SummaryRow label="下手地址" value={pickupForm.address} />
+                <SummaryRow label="下車地址" value={pickupForm.address} />
                 <SummaryRow label="車型" value={getCarLabel(carType)} />
                 {mode !== 'both' && <SummaryRow label="金額" value={`$${totalPrice}`} />}
               </div>
@@ -490,17 +589,33 @@ export default function App() {
             <div className="mt-8 pt-6 border-t-2 border-yellow-500/30 text-center">
               <p className="text-zinc-400 text-sm font-bold mb-2">合計金額</p>
               <p className="text-5xl font-black italic text-yellow-500 animate-in zoom-in-90 duration-500">${totalPrice}</p>
-              {mode === 'both' && <p className="text-xs text-zinc-500 mt-2">(送機 ${dropoffPrice} + 接機 ${pickupPrice})</p>}
+              {mode === 'both' && (
+                <p className="text-xs text-zinc-500 mt-2">(送機 ${dropoffPrice} + 接機 ${pickupPrice})</p>
+              )}
             </div>
 
             <div className="mt-8 space-y-3">
-              <button disabled={isSubmitting} onClick={handleBooking} className={`w-full py-6 rounded-[24px] font-black text-xl shadow-xl transition-all ${isSubmitting ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-yellow-500 text-black hover:bg-yellow-400 active:scale-95'}`}>
-                {isSubmitting ? '處理中...' : '✅ 確認預約'}
+              <button
+                disabled={isSubmitting}
+                onClick={handleBooking}
+                className={`w-full py-6 rounded-[24px] font-black text-xl shadow-xl transition-all ${
+                  isSubmitting
+                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    : 'bg-yellow-500 text-black hover:bg-yellow-400 active:scale-95'
+                }`}
+              >
+                {isSubmitting ? '處理中...' : '確認預約'}
               </button>
             </div>
           </div>
+
           <div className="flex justify-center w-full py-4">
-            <button onClick={() => window.history.back()} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all italic">← 回上一頁修改</button>
+            <button
+              onClick={() => window.history.back()}
+              className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all italic"
+            >
+              回上一頁修改
+            </button>
           </div>
         </div>
       </Layout>
@@ -516,7 +631,9 @@ export default function App() {
         <div className="mt-4 space-y-4 pb-24 px-2">
           <div className="w-full bg-zinc-900 border-2 border-yellow-500 p-8 rounded-[40px] shadow-2xl animate-in zoom-in-95 duration-500 space-y-8 text-center text-white">
             <div className="flex flex-col items-center">
-              <div className="text-green-400"><SvgCheck /></div>
+              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-2">
+                <span className="text-green-400 text-3xl font-black">V</span>
+              </div>
               <h3 className="text-xl font-black italic uppercase mt-2 text-yellow-500">預約已完成</h3>
               <p className="text-3xl font-black italic mt-2">${totalPrice} TWD</p>
               <p className="text-xs text-zinc-500 mt-1">訂單編號：{orderRef}</p>
@@ -525,21 +642,68 @@ export default function App() {
             </div>
 
             <div className="space-y-4">
-              <button onClick={() => setPaidStep('transfer')} className={`w-full py-6 rounded-3xl font-black transition-all ${paidStep === 'transfer' ? 'bg-yellow-500 text-black shadow-xl' : 'bg-black text-zinc-400'}`}>銀行轉帳</button>
+              <button
+                onClick={() => setPaidStep('transfer')}
+                className={`w-full py-6 rounded-3xl font-black transition-all ${
+                  paidStep === 'transfer' ? 'bg-yellow-500 text-black shadow-xl' : 'bg-black text-zinc-400'
+                }`}
+              >
+                銀行轉帳
+              </button>
+
               {paidStep === 'transfer' && (
                 <div className="bg-black/40 p-6 rounded-3xl border border-yellow-500/20 space-y-4">
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">銀行</span><span className="font-bold">渣打銀行</span></div>
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">銀行代號</span><span className="font-bold">052</span></div>
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">帳號</span><div className="flex items-center gap-2"><span className="font-bold text-sm">12220000471580</span><button onClick={copyAccount} className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 flex items-center gap-1 text-xs font-bold">{copied ? '✓ 已複製' : <><SvgCopy /> 複製</>}</button></div></div>
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">金額</span><span className="font-black text-yellow-500">${totalPrice}</span></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">銀行</span>
+                    <span className="font-bold">渣打銀行</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">銀行代號</span>
+                    <span className="font-bold">052</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">帳號</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm">12220000471580</span>
+                      <button
+                        onClick={copyAccount}
+                        className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 flex items-center gap-1 text-xs font-bold"
+                      >
+                        {copied ? '已複製' : '複製'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">金額</span>
+                    <span className="font-black text-yellow-500">${totalPrice}</span>
+                  </div>
                 </div>
               )}
+
               {ccLink ? (
-                <button onClick={() => window.open(ccLink, '_blank')} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">信用卡付款 (須加 3% 手續費)</button>
+                <button
+                  onClick={() => window.open(ccLink, '_blank')}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all"
+                >
+                  信用卡付款 (須加 3% 手續費)
+                </button>
               ) : (
-                <a href="https://line.me/ti/p/~@085qitid" target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">💬 刷卡請聯繫客服安排</a>
+                <a
+                  href="https://line.me/ti/p/~@085qitid"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center"
+                >
+                  刷卡請聯繫客服安排
+                </a>
               )}
-              <button onClick={handleDone} className="w-full bg-green-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">✅ 已付款，通知官方對帳</button>
+
+              <button
+                onClick={handleDone}
+                className="w-full bg-green-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all"
+              >
+                已付款，通知官方對帳
+              </button>
             </div>
           </div>
         </div>
