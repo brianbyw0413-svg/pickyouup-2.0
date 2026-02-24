@@ -57,12 +57,15 @@ const isValidPhone = (phone) => /^09\d{8}$/.test(phone.replace(/[-\s]/g, ''));
 
 const formatLiffPhone = (phone) => {
   if (!phone) return '';
-  let cleaned = phone.replace(/[^\d+]/g, '');
-  if (cleaned.startsWith('+886')) {
-    return '0' + cleaned.slice(4);
-  }
-  if (cleaned.startsWith('886')) {
+  // 先清掉所有非數字
+  let cleaned = phone.replace(/[^\d]/g, '');
+  // 處理 886 開頭
+  if (cleaned.startsWith('8869')) {
     return '0' + cleaned.slice(3);
+  }
+  // 處理已是 09 開頭但可能有雜訊
+  if (cleaned.startsWith('09')) {
+    return cleaned.slice(0, 10);
   }
   return cleaned;
 };
@@ -144,7 +147,7 @@ export default function App() {
     liff.init({ liffId: LIFF_ID })
       .then(() => {
         if (liff.isLoggedIn()) {
-          // 嘗試取得 Profile 與 Phone (若有權限)
+          // 嘗試取得 Profile 與 Phone
           Promise.all([
             liff.getProfile(),
             liff.getPhoneNumber().catch(() => null)
@@ -375,7 +378,7 @@ export default function App() {
             <div className="text-xl font-black">大車直達 (9人座)</div>
             <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-8人 / 行李1-8件 / 直達無加點</div>
           </button>
-          <a href={`https://line.me/ti/p/~${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
+          <a href={`https://line.me/ti/p/~${LINE_ID_ID.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
             <div className="text-zinc-400 text-sm">我真的不確定...</div>
             <div className="text-yellow-500 font-bold">需要人工報價 / 安全座椅 / 多點加停</div>
           </a>
@@ -566,7 +569,7 @@ export default function App() {
               {ccLink ? (
                 <button onClick={() => window.open(ccLink, '_blank')} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">信用卡付款 (須加 3% 手續費)</button>
               ) : (
-                <a href={`https://line.me/ti/p/~${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">刷卡請聯繫客服安排</a>
+                <a href={`https://line.me/ti/p/~${LINE_ID_ID.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">刷卡請聯繫客服安排</a>
               )}
               <button onClick={handleDone} className="w-full bg-green-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">已付款，通知官方對帳</button>
             </div>
