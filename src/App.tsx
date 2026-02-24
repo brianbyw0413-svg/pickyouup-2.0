@@ -117,3 +117,71 @@ return (
 <input type="time" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all appearance-none" />
 </div>
 )}
+
+<div className="space-y-1">
+<p className="text-[10px] font-black text-zinc-500 ml-4 uppercase tracking-widest">航班編號</p>
+<input type="text" placeholder="例如: JX58" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all" />
+</div>
+<div className="space-y-1">
+<p className="text-[10px] font-black text-zinc-500 ml-4 uppercase tracking-widest">{mode === 'pickup' ? '下車地址' : '上車地址'}</p>
+<input type="text" placeholder="請輸入完整街道地址" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all" />
+</div>
+<div className="grid grid-cols-2 gap-3">
+<div className="space-y-1">
+<p className="text-[10px] font-black text-zinc-500 ml-4 uppercase tracking-widest">姓名</p>
+<input type="text" placeholder="聯絡人" className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all" />
+</div>
+<div className="space-y-1">
+<p className="text-[10px] font-black text-zinc-500 ml-4 uppercase tracking-widest">電話</p>
+<input type="text" placeholder="0912..." className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 transition-all" />
+</div>
+</div>
+</div>
+{paidStep === 'none' && (
+<button onClick={() => setPaidStep('choice')} className="w-full mt-10 bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 shadow-xl shadow-yellow-500/20 transition-all">確認預約</button>
+)}
+</div>
+
+{paidStep !== 'none' && (
+<div className="w-full bg-zinc-900 border-2 border-yellow-500 p-8 rounded-[40px] shadow-2xl mt-4 animate-in zoom-in-95 duration-500 space-y-8 text-center">
+<div>
+<div className="inline-flex items-center gap-2 text-yellow-500 mb-2">
+<ShieldCheck size={24}/>
+<h3 className="text-xl font-black italic uppercase">待付款單成立</h3>
+</div>
+<p className="text-zinc-500 text-xs font-bold tracking-widest uppercase">金額：<span className="text-white text-3xl font-black italic ml-1">${currentPrice.price}</span></p>
+</div>
+<div className="space-y-4">
+<p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2 font-bold italic">請選擇支付方式</p>
+<div className="space-y-3">
+<button onClick={() => setPaidStep('transfer')} className={`w-full py-6 rounded-3xl font-black flex items-center justify-center gap-3 transition-all ${paidStep === 'transfer' ? 'bg-yellow-500 text-black' : 'bg-black border border-zinc-800 text-zinc-400 hover:text-white'}`}>
+<Landmark size={20}/> 銀行轉帳
+</button>
+{paidStep === 'transfer' && (
+<div className="bg-black/40 border border-yellow-500/20 p-6 rounded-[30px] animate-in slide-in-from-top-4">
+<p className="text-zinc-300 text-base font-bold leading-relaxed">渣打銀行 (052) <br/>帳號: <span className="text-white font-mono text-lg tracking-wider">12220000471580</span></p>
+<p className="text-[10px] text-zinc-600 mt-4 font-bold">付款後請至 LINE 回報後五碼。汪！</p>
+</div>
+)}
+</div>
+<div className="space-y-3">
+<button onClick={() => setPaidStep('card')} className={`w-full py-6 rounded-3xl font-black flex items-center justify-center gap-3 transition-all ${paidStep === 'card' ? 'bg-yellow-500 text-black' : 'bg-black text-zinc-400'}`}>
+<CreditCard size={20}/> 線上刷卡 (須加 3%)
+</button>
+{paidStep === 'card' && (
+<div className="space-y-4 animate-in slide-in-from-top-4 text-center">
+<p className="text-red-500 text-[10px] font-black animate-pulse tracking-widest uppercase">⚠️ 刷卡須另加收 3% 手續費</p>
+<a href={currentPrice.link} target="_blank" className="bg-white text-black py-6 rounded-3xl font-black text-lg block hover:bg-yellow-500 shadow-xl transition-all">前往支付 (含手續費)</a>
+</div>
+)}
+</div>
+</div>
+</div>
+)}
+<button onClick={() => {setPage('home'); setPaidStep('none');}} className="w-full text-white hover:text-black hover:bg-yellow-500 active:bg-yellow-500 active:text-black font-black py-10 tracking-widest text-xl uppercase text-center transition-all active:scale-95">返回首頁</button>
+</div>
+</Layout>
+);
+}
+return null;
+}
