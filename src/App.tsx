@@ -55,7 +55,7 @@ export default function App() {
         
         <Container>
           <h2 className="text-4xl md:text-5xl font-black italic mb-16 tracking-tighter leading-tight text-center">
-             快速預約，<br/><span className="text-yellow-500 text-5xl md:text-6xl">專業接送。</span>
+             快速預約<br/><span className="text-yellow-500 text-5xl md:text-6xl">專業接送</span>
           </h2>
           <div className="w-full space-y-5">
             <button onClick={() => { setMode('dropoff'); navigateTo('choice'); }} className="w-full bg-zinc-900/80 backdrop-blur-md border border-zinc-800 hover:border-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl shadow-2xl transition-all active:scale-95">我要送機</button>
