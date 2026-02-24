@@ -537,4 +537,15 @@ export default function App() {
               {ccLink ? (
                 <button onClick={() => window.open(ccLink, '_blank')} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">信用卡付款 (須加 3% 手續費)</button>
               ) : (
-                <a href="https://line.me/ti/p/~@085qitid" target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">💬
+                <a href="https://line.me/ti/p/~@085qitid" target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">💬 刷卡請聯繫客服安排</a>
+              )}
+              <button onClick={handleDone} className="w-full bg-green-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">✅ 已付款，通知官方對帳</button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return null;
+}
