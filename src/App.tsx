@@ -143,7 +143,7 @@ const Layout = ({ children, bg }) => (
 
 const Header = () => (
   <nav style={{ width: '100%', padding: '20px 0', display: 'flex', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 24 }}>
-    <img src="https://pickyouup.tw/logo-gold.png" alt="PickYouUP" style={{ height: 36, width: 'auto' }} />
+    <img src="https://pickyouup.tw/logo-gold.png" alt="PickYouUP" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
   </nav>
 );
 
