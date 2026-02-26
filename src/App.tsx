@@ -16,10 +16,8 @@ const LINE_ID_ID = '@835acfgq';
 const LINE_OA_URL = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID_ID)}/`;
 
 const BASE_PRICING = {
-  'small-dropoff': 1200,
-  'large-dropoff': 1500,
-  'small-pickup': 1300,
-  'large-pickup': 1600,
+  'small-dropoff': 1200, 'large-dropoff': 1500,
+  'small-pickup': 1300, 'large-pickup': 1600,
 };
 
 const CREDIT_CARD_LINKS = {
@@ -46,7 +44,28 @@ const CREDIT_CARD_LINKS = {
   3200: 'https://api.payuni.com.tw/api/uop/receive_info/2/1/U03424091/Lt3gvazrBKe9A8EDKHf2',
 };
 
+const BG_IMAGES = [
+  { src: '/pexels-bertelli-1.jpg', label: 'Bertelli 1' },
+  { src: '/pexels-bertelli-2.jpg', label: 'Bertelli 2' },
+  { src: '/pexels-pixabay-531756.jpg', label: 'Pixabay 飛機' },
+  { src: '/pexels-tanathip-rattanatum-2026324.jpg', label: 'Tanathip 車輛' },
+  { src: '/PXL_20240912_093938326.MP.jpg', label: '實拍 1' },
+  { src: '/PXL_20240912_093945075.MP.jpg', label: '實拍 2' },
+];
+
 const EMPTY_FORM = { name: '', phone: '', address: '', date: '', time: '', flight: '' };
+
+// ═══════════════════════════════════════════════════
+// 背景設定預設值
+// ═══════════════════════════════════════════════════
+const DEFAULT_BG = {
+  bgIndex: 0,
+  overlayOpacity: 0.75,
+  gradientDirection: 'to bottom',
+  gradientTop: 0.5,
+  gradientBottom: 0.9,
+  blur: 2,
+};
 
 // ═══════════════════════════════════════════════════
 // 工具函式
@@ -58,12 +77,8 @@ const isValidPhone = (phone) => /^09\d{8}$/.test(phone.replace(/[-\s]/g, ''));
 const formatLiffPhone = (phone) => {
   if (!phone) return '';
   let digits = phone.replace(/\D/g, '');
-  if (digits.startsWith('886') && digits.length >= 12) {
-    return '0' + digits.slice(3);
-  }
-  if (digits.startsWith('09')) {
-    return digits.slice(0, 10);
-  }
+  if (digits.startsWith('886') && digits.length >= 12) return '0' + digits.slice(3);
+  if (digits.startsWith('09')) return digits.slice(0, 10);
   return digits;
 };
 
@@ -80,22 +95,125 @@ const getModeLabel = (m) => {
   if (m === 'pickup') return '接機';
   return '來回接送';
 };
-
 const getCarLabel = (c) => (c === 'small' ? '小車 (5人座)' : '大車 (9人座)');
+
+// ═══════════════════════════════════════════════════
+// 樣式常數
+// ═══════════════════════════════════════════════════
+const S = {
+  gold: '#d4af37',
+  bg: '#0c0a09',
+  cardBg: 'rgba(12,10,9,0.85)',
+  cardBorder: 'rgba(255,255,255,0.06)',
+  inputBg: 'rgba(0,0,0,0.5)',
+  inputBorder: 'rgba(255,255,255,0.1)',
+  inputFocus: '#d4af37',
+  textDim: '#8a8279',
+  radius: 12,
+  cardRadius: 20,
+};
 
 // ═══════════════════════════════════════════════════
 // 共用元件
 // ═══════════════════════════════════════════════════
 
-const Layout = ({ children }) => (
-  <div className="min-h-screen bg-[#0a0a0c] text-white p-4 flex flex-col items-center overflow-x-hidden relative font-sans">
-    <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none"></div>
-    <div className="w-full max-w-[480px] relative z-10">{children}</div>
+const Background = ({ bg }) => {
+  const img = BG_IMAGES[bg.bgIndex] || BG_IMAGES[0];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+      <img
+        src={img.src}
+        alt=""
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${bg.blur}px)`, transform: 'scale(1.05)' }}
+      />
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: `linear-gradient(${bg.gradientDirection}, rgba(12,10,9,${bg.gradientTop}) 0%, rgba(12,10,9,${bg.gradientBottom}) 100%)`,
+      }} />
+    </div>
+  );
+};
+
+const Layout = ({ children, bg }) => (
+  <div style={{ minHeight: '100vh', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px', fontFamily: "'Inter','Noto Sans TC',sans-serif", position: 'relative' }}>
+    <Background bg={bg} />
+    <div style={{ width: '100%', maxWidth: 480, position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
 );
 
-const FieldError = ({ message }) =>
-  message ? <div className="mt-1 text-red-400 text-sm font-bold">{message}</div> : null;
+const Header = () => (
+  <nav style={{ width: '100%', padding: '20px 0', display: 'flex', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 24 }}>
+    <img src="/logo-gold.png" alt="PickYouUP" style={{ height: 36, width: 'auto' }} />
+  </nav>
+);
+
+const Label = ({ children }) => (
+  <div style={{ fontSize: 12, fontWeight: 600, color: S.textDim, marginBottom: 6, letterSpacing: 0.5 }}>{children}</div>
+);
+
+const Input = ({ label, error, ...props }) => (
+  <div style={{ marginBottom: 16 }}>
+    {label && <Label>{label}</Label>}
+    <input
+      {...props}
+      style={{
+        width: '100%', padding: '14px 16px',
+        background: S.inputBg, border: `1px solid ${error ? '#ef5350' : S.inputBorder}`,
+        borderRadius: S.radius, color: '#fff', fontSize: 15, fontFamily: 'inherit',
+        outline: 'none', transition: 'border-color 0.2s', backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        ...(props.style || {}),
+      }}
+      onFocus={(e) => { e.target.style.borderColor = S.inputFocus; props.onFocus?.(e); }}
+      onBlur={(e) => { e.target.style.borderColor = error ? '#ef5350' : S.inputBorder; props.onBlur?.(e); }}
+    />
+    {error && <div style={{ marginTop: 4, color: '#ef5350', fontSize: 12, fontWeight: 600 }}>{error}</div>}
+  </div>
+);
+
+const PrimaryBtn = ({ children, disabled, onClick, style }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      width: '100%', padding: '16px', border: 'none', borderRadius: S.radius,
+      background: disabled ? '#333' : S.gold, color: disabled ? '#666' : '#000',
+      fontSize: 16, fontWeight: 800, cursor: disabled ? 'not-allowed' : 'pointer',
+      transition: 'all 0.2s', ...(style || {}),
+    }}
+  >
+    {children}
+  </button>
+);
+
+const Card = ({ children, highlight, style }) => (
+  <div style={{
+    background: S.cardBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+    border: highlight ? `2px solid ${S.gold}` : `1px solid ${S.cardBorder}`,
+    borderRadius: S.cardRadius, padding: 28, ...(style || {}),
+  }}>
+    {children}
+  </div>
+);
+
+const PageTitle = ({ children, sub }) => (
+  <div style={{ textAlign: 'center', marginBottom: 24 }}>
+    <h2 style={{ fontSize: 22, fontWeight: 800, color: S.gold, margin: 0 }}>{children}</h2>
+    {sub && <p style={{ fontSize: 13, color: S.textDim, marginTop: 6 }}>{sub}</p>}
+  </div>
+);
+
+const BackBtn = ({ onClick, label }) => (
+  <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+    <button onClick={onClick} style={{
+      padding: '10px 28px', borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)',
+      background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)',
+      color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+    }}>
+      {label || '回上一頁'}
+    </button>
+  </div>
+);
 
 const Countdown = ({ createdAt }) => {
   const [remaining, setRemaining] = useState('');
@@ -114,11 +232,27 @@ const Countdown = ({ createdAt }) => {
     return () => clearInterval(id);
   }, [createdAt]);
   return (
-    <p className={`text-sm font-bold ${remaining === '已逾時' ? 'text-red-400' : 'text-zinc-400'}`}>
+    <p style={{ fontSize: 13, fontWeight: 700, color: remaining === '已逾時' ? '#ef5350' : S.textDim }}>
       付款時限：{remaining}
     </p>
   );
 };
+
+// ═══════════════════════════════════════════════════
+// 設計工具 Slider
+// ═══════════════════════════════════════════════════
+const Slider = ({ label, min, max, step, value, onChange }) => (
+  <div style={{ marginBottom: 12 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+      <span style={{ fontSize: 11, color: '#999' }}>{label}</span>
+      <span style={{ fontSize: 11, color: S.gold }}>{value}</span>
+    </div>
+    <input type="range" min={min} max={max} step={step || 0.01} value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      style={{ width: '100%', accentColor: S.gold }}
+    />
+  </div>
+);
 
 // ═══════════════════════════════════════════════════
 // 主元件
@@ -135,9 +269,13 @@ export default function App() {
   const [errors, setErrors] = useState({});
   const [orderRef, setOrderRef] = useState('');
   const [orderCreatedAt, setOrderCreatedAt] = useState(null);
-
   const [dropoffForm, setDropoffForm] = useState({ ...EMPTY_FORM });
   const [pickupForm, setPickupForm] = useState({ ...EMPTY_FORM });
+
+  // 背景設定
+  const [bg, setBg] = useState(DEFAULT_BG);
+  const [showTool, setShowTool] = useState(false);
+  const uBg = (key, val) => setBg((prev) => ({ ...prev, [key]: val }));
 
   // ── LIFF 初始化 ──
   useEffect(() => {
@@ -149,16 +287,8 @@ export default function App() {
             liff.getPhoneNumber().catch(() => null)
           ]).then(([profile, phoneNumber]) => {
             const formattedPhone = formatLiffPhone(phoneNumber);
-            setDropoffForm(prev => ({ 
-              ...prev, 
-              name: profile.displayName,
-              phone: formattedPhone || prev.phone
-            }));
-            setPickupForm(prev => ({ 
-              ...prev, 
-              name: profile.displayName,
-              phone: formattedPhone || prev.phone
-            }));
+            setDropoffForm(prev => ({ ...prev, name: profile.displayName, phone: formattedPhone || prev.phone }));
+            setPickupForm(prev => ({ ...prev, name: profile.displayName, phone: formattedPhone || prev.phone }));
           });
         }
       })
@@ -179,18 +309,10 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  // ── 價格計算 ──
+  // ── 價格 ──
   const dropoffBase = BASE_PRICING[`${carType}-dropoff`] || 0;
   const pickupBase = BASE_PRICING[`${carType}-pickup`] || 0;
-
-  const calcTotal = () => {
-    if (mode === 'dropoff') return dropoffBase;
-    if (mode === 'pickup') return pickupBase;
-    if (mode === 'both') return dropoffBase + pickupBase;
-    return 0;
-  };
-
-  const totalPrice = calcTotal();
+  const totalPrice = mode === 'dropoff' ? dropoffBase : mode === 'pickup' ? pickupBase : mode === 'both' ? dropoffBase + pickupBase : 0;
 
   // ── 表單驗證 ──
   const validateForm = (form, formMode) => {
@@ -207,41 +329,27 @@ export default function App() {
   };
 
   const resetAll = () => {
-    setDropoffForm({ ...EMPTY_FORM });
-    setPickupForm({ ...EMPTY_FORM });
-    setPaidStep('none');
-    setBothStep(1);
-    setCopied(false);
-    setErrors({});
-    setOrderRef('');
-    setOrderCreatedAt(null);
+    setDropoffForm({ ...EMPTY_FORM }); setPickupForm({ ...EMPTY_FORM });
+    setPaidStep('none'); setBothStep(1); setCopied(false); setErrors({});
+    setOrderRef(''); setOrderCreatedAt(null);
   };
 
   const copyAccount = async () => {
     try {
       await navigator.clipboard.writeText('12220000471580');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
       const ta = document.createElement('textarea');
       ta.value = '12220000471580';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     }
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
   const handleGoToConfirm = () => {
     if (mode === 'both') {
       const dropErrs = validateForm(dropoffForm, 'dropoff');
       const pickErrs = validateForm(pickupForm, 'pickup');
-      if (Object.keys(dropErrs).length > 0 || Object.keys(pickErrs).length > 0) {
-        setErrors({ ...dropErrs, ...pickErrs });
-        return;
-      }
+      if (Object.keys(dropErrs).length > 0 || Object.keys(pickErrs).length > 0) { setErrors({ ...dropErrs, ...pickErrs }); return; }
     } else {
       const form = mode === 'pickup' ? pickupForm : dropoffForm;
       const errs = validateForm(form, mode);
@@ -255,51 +363,32 @@ export default function App() {
     setIsSubmitting(true);
     const ref = generateOrderRef();
     const orders = [];
-
     if (mode === 'dropoff' || mode === 'both') {
       orders.push({
-        order_ref: ref,
-        service_mode: 'dropoff',
-        car_type: carType,
-        contact_name: dropoffForm.name.trim(),
-        contact_phone: dropoffForm.phone.replace(/\D/g, ''),
-        pickup_address: dropoffForm.address.trim(),
-        dropoff_address: '',
-        service_date: dropoffForm.date,
-        pickup_time: dropoffForm.time,
+        order_ref: ref, service_mode: 'dropoff', car_type: carType,
+        contact_name: dropoffForm.name.trim(), contact_phone: dropoffForm.phone.replace(/\D/g, ''),
+        pickup_address: dropoffForm.address.trim(), dropoff_address: '',
+        service_date: dropoffForm.date, pickup_time: dropoffForm.time,
         flight_number: dropoffForm.flight.trim().toUpperCase(),
         amount: mode === 'both' ? dropoffBase : totalPrice,
-        total_amount: totalPrice,
-        status: 'pending',
-        payment_method: '',
+        total_amount: totalPrice, status: 'pending', payment_method: '',
       });
     }
-
     if (mode === 'pickup' || mode === 'both') {
       orders.push({
-        order_ref: ref,
-        service_mode: 'pickup',
-        car_type: carType,
-        contact_name: pickupForm.name.trim(),
-        contact_phone: pickupForm.phone.replace(/\D/g, ''),
-        pickup_address: '',
-        dropoff_address: pickupForm.address.trim(),
-        service_date: pickupForm.date,
-        pickup_time: '',
+        order_ref: ref, service_mode: 'pickup', car_type: carType,
+        contact_name: pickupForm.name.trim(), contact_phone: pickupForm.phone.replace(/\D/g, ''),
+        pickup_address: '', dropoff_address: pickupForm.address.trim(),
+        service_date: pickupForm.date, pickup_time: '',
         flight_number: pickupForm.flight.trim().toUpperCase(),
         amount: mode === 'both' ? pickupBase : totalPrice,
-        total_amount: totalPrice,
-        status: 'pending',
-        payment_method: '',
+        total_amount: totalPrice, status: 'pending', payment_method: '',
       });
     }
-
     const { error } = await supabase.from('orders').insert(orders);
     if (!error) {
-      setOrderRef(ref);
-      setOrderCreatedAt(Date.now());
-      setPaidStep('choice');
-      navigateTo('payment');
+      setOrderRef(ref); setOrderCreatedAt(Date.now());
+      setPaidStep('choice'); navigateTo('payment');
     } else {
       alert('預約暫時無法提交，請稍後再試。');
       console.error('Supabase error:', error);
@@ -310,17 +399,10 @@ export default function App() {
   const handleDone = () => {
     const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
     const summary = [
-      `【PickYouUP 付款回報】`,
-      `訂單編號：${orderRef}`,
-      `姓名：${mainForm.name}`,
-      `電話：${mainForm.phone}`,
-      `服務：${getModeLabel(mode)}`,
-      `車型：${getCarLabel(carType)}`,
-      `總計：$${totalPrice} 元`,
-      ``,
-      `您好，我已完成付款，請幫我確認。`,
+      `【PickYouUP 付款回報】`, `訂單編號：${orderRef}`, `姓名：${mainForm.name}`,
+      `電話：${mainForm.phone}`, `服務：${getModeLabel(mode)}`, `車型：${getCarLabel(carType)}`,
+      `總計：$${totalPrice} 元`, ``, `您好，我已完成付款，請幫我確認。`,
     ].join('\n');
-
     if (liff.isInClient()) {
       liff.sendMessages([{ type: 'text', text: summary }])
         .then(() => liff.closeWindow())
@@ -335,55 +417,128 @@ export default function App() {
   // ═══════════════════════════════════════════════════
   // 頁面：首頁
   // ═══════════════════════════════════════════════════
-  if (page === 'home')
-    return (
-      <Layout>
-        <nav className="w-full py-8 mb-12 flex justify-center border-b border-white/5">
-          <h1 className="text-3xl font-black text-yellow-500 uppercase">PICKYOUUP.TW</h1>
-        </nav>
-        <div className="w-full text-center space-y-6 animate-in fade-in duration-1000 uppercase font-black italic">
-          <h2 className="text-[11vw] md:text-6xl mb-16 tracking-tighter">
-            快速預約<br /><span className="text-yellow-500">專業接送</span>
-          </h2>
-          <div className="space-y-4 px-2 not-italic">
-            <button onClick={() => { setMode('dropoff'); navigateTo('choice'); }} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl transition-all shadow-xl">我要送機</button>
-            <button onClick={() => { setMode('pickup'); navigateTo('choice'); }} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl transition-all shadow-xl">我要接機</button>
-            <button onClick={() => { setMode('both'); navigateTo('choice'); }} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-yellow-500 hover:text-black py-10 rounded-[40px] font-black text-2xl shadow-xl transition-all">接送一併預訂</button>
-          </div>
-          <p className="text-[10px] text-yellow-500/40 tracking-[0.3em] mt-12 not-italic font-bold">PREMIUM SERVICE SINCE 2026</p>
+  if (page === 'home') return (
+    <Layout bg={bg}>
+      <Header />
+      <div style={{ textAlign: 'center', padding: '20px 0 40px' }}>
+        <h2 style={{ fontSize: 'clamp(36px, 10vw, 52px)', fontWeight: 900, fontStyle: 'italic', lineHeight: 1.1, margin: '0 0 48px', textTransform: 'uppercase' }}>
+          快速預約<br /><span style={{ color: S.gold }}>專業接送</span>
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '0 4px' }}>
+          {[
+            { label: '我要送機', mode: 'dropoff' },
+            { label: '我要接機', mode: 'pickup' },
+            { label: '接送一併預訂', mode: 'both' },
+          ].map((item) => (
+            <button key={item.mode}
+              onClick={() => { setMode(item.mode); navigateTo('choice'); }}
+              style={{
+                width: '100%', padding: '22px', border: `1px solid ${S.cardBorder}`,
+                borderRadius: S.cardRadius, background: S.cardBg,
+                backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                color: '#fff', fontSize: 20, fontWeight: 800, cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = S.gold; e.currentTarget.style.color = '#000'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = S.cardBg; e.currentTarget.style.color = '#fff'; }}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-      </Layout>
-    );
+        <p style={{ fontSize: 10, color: 'rgba(212,175,55,0.4)', letterSpacing: 4, marginTop: 36, fontWeight: 700 }}>
+          PREMIUM SERVICE SINCE 2026
+        </p>
+      </div>
+
+      {/* ═══ 設計工具按鈕 ═══ */}
+      <button onClick={() => setShowTool(!showTool)} style={{
+        position: 'fixed', top: 12, right: 12, zIndex: 9999, padding: '6px 14px', borderRadius: 20,
+        background: showTool ? '#333' : S.gold, color: showTool ? S.gold : '#000',
+        fontSize: 11, fontWeight: 700, border: showTool ? `1px solid ${S.gold}` : 'none', cursor: 'pointer',
+      }}>
+        {showTool ? '✕ 關閉' : '⚙ 背景工具'}
+      </button>
+
+      {/* ═══ 設計工具面板 ═══ */}
+      {showTool && (
+        <div style={{
+          position: 'fixed', top: 44, right: 12, zIndex: 9998, width: 280,
+          background: 'rgba(0,0,0,0.95)', borderRadius: 14, border: `1px solid ${S.gold}`,
+          maxHeight: '75vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        }}>
+          <div style={{ padding: 14, overflowY: 'auto', flex: 1 }}>
+            <div style={{ fontSize: 13, color: S.gold, fontWeight: 700, marginBottom: 12 }}>背景圖片</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+              {BG_IMAGES.map((img, i) => (
+                <button key={i} onClick={() => uBg('bgIndex', i)} style={{
+                  padding: '7px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer', textAlign: 'left',
+                  background: bg.bgIndex === i ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.04)',
+                  border: bg.bgIndex === i ? `1px solid ${S.gold}` : '1px solid rgba(255,255,255,0.08)',
+                  color: bg.bgIndex === i ? S.gold : '#aaa',
+                }}>
+                  {img.label}
+                </button>
+              ))}
+            </div>
+            <Slider label="模糊度" min={0} max={10} step={0.5} value={bg.blur} onChange={(v) => uBg('blur', v)} />
+            <Slider label="頂部遮罩" min={0} max={1} step={0.05} value={bg.gradientTop} onChange={(v) => uBg('gradientTop', v)} />
+            <Slider label="底部遮罩" min={0} max={1} step={0.05} value={bg.gradientBottom} onChange={(v) => uBg('gradientBottom', v)} />
+          </div>
+          <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(212,175,55,0.3)' }}>
+            <button onClick={() => {
+              navigator.clipboard.writeText(JSON.stringify(bg, null, 2));
+              alert('已複製背景設定 JSON！');
+            }} style={{
+              width: '100%', padding: 8, background: S.gold, border: 'none', borderRadius: 8,
+              fontWeight: 700, fontSize: 12, cursor: 'pointer', color: '#000',
+            }}>
+              匯出背景設定
+            </button>
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
 
   // ═══════════════════════════════════════════════════
   // 頁面：選擇車型
   // ═══════════════════════════════════════════════════
-  if (page === 'choice')
-    return (
-      <Layout>
-        <div className="mt-8 mb-6">
-          <h2 className="text-3xl font-black italic text-yellow-500 text-center uppercase">{getModeLabel(mode)}</h2>
-          <p className="text-center text-zinc-400 mt-2">請選擇車型</p>
-        </div>
-        <div className="space-y-4">
-          <button onClick={() => { setCarType('small'); navigateTo('form'); }} className="w-full bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black transition-all group shadow-xl">
-            <div className="text-xl font-black">小車直達 (5人座)</div>
-            <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-4人 / 行李1-3件 / 直達無加點</div>
+  if (page === 'choice') return (
+    <Layout bg={bg}>
+      <Header />
+      <PageTitle sub="請選擇車型">{getModeLabel(mode)}</PageTitle>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '0 4px' }}>
+        {[
+          { type: 'small', title: '小車直達 (5人座)', desc: '乘客1-4人 / 行李1-3件 / 直達無加點' },
+          { type: 'large', title: '大車直達 (9人座)', desc: '乘客1-8人 / 行李1-8件 / 直達無加點' },
+        ].map((item) => (
+          <button key={item.type}
+            onClick={() => { setCarType(item.type); navigateTo('form'); }}
+            style={{
+              width: '100%', padding: 22, border: `1px solid ${S.cardBorder}`, borderRadius: S.cardRadius,
+              background: S.cardBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+              textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = S.gold; e.currentTarget.querySelector('.t').style.color = '#000'; e.currentTarget.querySelector('.d').style.color = 'rgba(0,0,0,0.6)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = S.cardBg; e.currentTarget.querySelector('.t').style.color = '#fff'; e.currentTarget.querySelector('.d').style.color = S.textDim; }}
+          >
+            <div className="t" style={{ color: '#fff', fontSize: 18, fontWeight: 800, transition: 'color 0.2s' }}>{item.title}</div>
+            <div className="d" style={{ color: S.textDim, fontSize: 13, marginTop: 4, transition: 'color 0.2s' }}>{item.desc}</div>
           </button>
-          <button onClick={() => { setCarType('large'); navigateTo('form'); }} className="w-full bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] text-left hover:bg-yellow-500 hover:text-black transition-all group shadow-xl">
-            <div className="text-xl font-black">大車直達 (9人座)</div>
-            <div className="text-sm text-zinc-400 group-hover:text-black/70">乘客1-8人 / 行李1-8件 / 直達無加點</div>
-          </button>
-          <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-zinc-900 border border-zinc-800 p-6 rounded-[40px] text-center hover:bg-zinc-800 transition-all">
-            <div className="text-zinc-400 text-sm">我真的不確定...</div>
-            <div className="text-yellow-500 font-bold">需要人工報價 / 安全座椅 / 多點加停</div>
-          </a>
-        </div>
-        <div className="flex justify-center w-full py-4">
-          <button onClick={() => window.history.back()} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all">回上一頁</button>
-        </div>
-      </Layout>
-    );
+        ))}
+        <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" style={{
+          display: 'block', padding: '18px 22px', border: `1px solid ${S.cardBorder}`,
+          borderRadius: S.cardRadius, background: S.cardBg, backdropFilter: 'blur(20px)',
+          textAlign: 'center', textDecoration: 'none', transition: 'all 0.2s',
+        }}>
+          <div style={{ color: S.textDim, fontSize: 13 }}>我真的不確定...</div>
+          <div style={{ color: S.gold, fontWeight: 700, fontSize: 14, marginTop: 4 }}>需要人工報價 / 安全座椅 / 多點加停</div>
+        </a>
+      </div>
+      <BackBtn onClick={() => window.history.back()} />
+    </Layout>
+  );
 
   // ═══════════════════════════════════════════════════
   // 頁面：填寫表單
@@ -399,74 +554,60 @@ export default function App() {
       const errs = validateForm(dropoffForm, 'dropoff');
       if (Object.keys(errs).length > 0) { setErrors(errs); return; }
       setErrors({});
-      setPickupForm((prev) => ({
-        ...prev,
-        name: prev.name || dropoffForm.name,
-        phone: prev.phone || dropoffForm.phone,
-      }));
-      setBothStep(2);
-      window.scrollTo(0, 0);
+      setPickupForm((prev) => ({ ...prev, name: prev.name || dropoffForm.name, phone: prev.phone || dropoffForm.phone }));
+      setBothStep(2); window.scrollTo(0, 0);
     };
 
-    // 統一 Input 樣式，加入 autofill 覆蓋
-    const inputClasses = "w-full bg-black border border-zinc-800 rounded-2xl p-5 text-white font-bold outline-none focus:border-yellow-500 [color-scheme:dark]";
-
     return (
-      <Layout>
-        <div className="mt-4 space-y-6 pb-24 px-2">
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] shadow-2xl space-y-10 text-white">
-            <h2 className="text-3xl font-black italic text-yellow-500 text-center uppercase underline underline-offset-8 decoration-zinc-800">
-              {isBoth ? (bothStep === 1 ? '第一步：送機詳情' : '第二步：接機詳情') : (currentMode === 'pickup' ? '接機預約詳情' : '送機預約詳情')}
-            </h2>
+      <Layout bg={bg}>
+        <Header />
+        <div style={{ padding: '0 4px 80px' }}>
+          <Card>
+            <PageTitle sub={isBoth ? `第 ${bothStep}/2 步` : undefined}>
+              {isBoth ? (bothStep === 1 ? '送機詳情' : '接機詳情') : (currentMode === 'pickup' ? '接機預約' : '送機預約')}
+            </PageTitle>
 
-            <div className="space-y-6 text-left">
-              <div>
-                <input value={currentForm.name} onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }} type="text" placeholder="聯絡人姓名" className={inputClasses} />
-                <FieldError message={errors.name} />
-              </div>
+            <Input label="聯絡人姓名" placeholder="您的姓名" value={currentForm.name} error={errors.name}
+              onChange={(e) => { setForm({ ...currentForm, name: e.target.value }); setErrors((p) => ({ ...p, name: '' })); }} />
 
-              <div>
-                <input value={currentForm.phone} onChange={(e) => { let raw = e.target.value.replace(/\D/g, ''); if (raw.startsWith('886') && raw.length > 10) { raw = '0' + raw.slice(3); } raw = raw.slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} type="tel" inputMode="numeric" placeholder="聯絡電話（09 開頭）" maxLength={13} className={inputClasses} />
-                <FieldError message={errors.phone} />
-              </div>
+            <Input label="聯絡電話" placeholder="09XX-XXX-XXX" type="tel" inputMode="numeric" maxLength={10}
+              value={currentForm.phone} error={errors.phone}
+              onChange={(e) => { const raw = e.target.value.replace(/\D/g, '').slice(0, 10); setForm({ ...currentForm, phone: raw }); setErrors((p) => ({ ...p, phone: '' })); }} />
 
-              <div className="space-y-1">
-                <p className="text-sm font-bold ml-5">{currentMode === 'pickup' ? '抵達日期' : '出發日期'}</p>
-                <input value={currentForm.date} onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }} type="date" min={getTodayString()} className={inputClasses} />
-                <FieldError message={errors.date} />
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <Input label={currentMode === 'pickup' ? '抵達日期' : '出發日期'} type="date" min={getTodayString()}
+                value={currentForm.date} error={errors.date}
+                onChange={(e) => { setForm({ ...currentForm, date: e.target.value }); setErrors((p) => ({ ...p, date: '' })); }} />
 
-              <div>
-                <input value={currentForm.flight} onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }} type="text" placeholder="航班編號（例如: BR001）" className={inputClasses + " uppercase"} />
-                <FieldError message={errors.flight} />
-              </div>
-
-              {currentMode === 'dropoff' && (
-                <div className="space-y-1">
-                  <p className="text-sm font-bold ml-5">上車時間</p>
-                  <input value={currentForm.time} onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }} type="time" className={inputClasses} />
-                  <FieldError message={errors.time} />
-                </div>
-              )}
-
-              <div>
-                <input value={currentForm.address} onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }} type="text" placeholder={currentMode === 'pickup' ? '下車詳細地址' : '上車詳細地址'} className={inputClasses} />
-                <FieldError message={errors.address} />
-              </div>
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-zinc-800 text-center">
-              {isBoth && bothStep === 1 ? (
-                <button onClick={handleNextStep} className="w-full bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 transition-all">下一步：填寫接機資訊</button>
+              {currentMode === 'dropoff' ? (
+                <Input label="上車時間" type="time" value={currentForm.time} error={errors.time}
+                  onChange={(e) => { setForm({ ...currentForm, time: e.target.value }); setErrors((p) => ({ ...p, time: '' })); }} />
               ) : (
-                <button onClick={handleGoToConfirm} className="w-full bg-yellow-500 text-black py-6 rounded-[24px] font-black text-xl hover:bg-yellow-400 active:scale-95 transition-all">確認明細</button>
+                <Input label="航班編號" placeholder="BR001" value={currentForm.flight} error={errors.flight}
+                  onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }}
+                  style={{ textTransform: 'uppercase' }} />
               )}
             </div>
-          </div>
 
-          <div className="flex justify-center w-full py-4">
-            <button onClick={() => { if (isBoth && bothStep === 2) { setBothStep(1); setErrors({}); } else { window.history.back(); } }} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all italic">回上一頁</button>
-          </div>
+            {currentMode === 'dropoff' && (
+              <Input label="航班編號" placeholder="例如 BR001" value={currentForm.flight} error={errors.flight}
+                onChange={(e) => { setForm({ ...currentForm, flight: e.target.value.toUpperCase() }); setErrors((p) => ({ ...p, flight: '' })); }}
+                style={{ textTransform: 'uppercase' }} />
+            )}
+
+            <Input label={currentMode === 'pickup' ? '下車詳細地址' : '上車詳細地址'}
+              placeholder="請輸入完整地址" value={currentForm.address} error={errors.address}
+              onChange={(e) => { setForm({ ...currentForm, address: e.target.value }); setErrors((p) => ({ ...p, address: '' })); }} />
+
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${S.cardBorder}` }}>
+              {isBoth && bothStep === 1 ? (
+                <PrimaryBtn onClick={handleNextStep}>下一步：填寫接機資訊</PrimaryBtn>
+              ) : (
+                <PrimaryBtn onClick={handleGoToConfirm}>確認明細</PrimaryBtn>
+              )}
+            </div>
+          </Card>
+          <BackBtn onClick={() => { if (isBoth && bothStep === 2) { setBothStep(1); setErrors({}); } else { window.history.back(); } }} />
         </div>
       </Layout>
     );
@@ -476,61 +617,60 @@ export default function App() {
   // 頁面：確認明細
   // ═══════════════════════════════════════════════════
   if (page === 'confirm') {
-    const SummaryRow = ({ label, value }) => (
-      <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-        <span className="text-zinc-400 text-sm">{label}</span>
-        <span className="font-bold">{value}</span>
+    const Row = ({ label, value }) => (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+        <span style={{ fontSize: 13, color: S.textDim }}>{label}</span>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>{value}</span>
       </div>
     );
 
     return (
-      <Layout>
-        <div className="mt-4 space-y-4 pb-24 px-2">
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[40px] shadow-2xl text-white">
-            <h2 className="text-2xl font-black italic text-yellow-500 text-center uppercase mb-8">請確認預約明細</h2>
+      <Layout bg={bg}>
+        <Header />
+        <div style={{ padding: '0 4px 80px' }}>
+          <Card>
+            <PageTitle>請確認預約明細</PageTitle>
 
             {(mode === 'dropoff' || mode === 'both') && (
-              <div className="mb-6">
-                {mode === 'both' && <p className="text-yellow-500 font-black text-sm mb-3 uppercase">送機</p>}
-                <SummaryRow label="聯絡人" value={dropoffForm.name} />
-                <SummaryRow label="電話" value={dropoffForm.phone} />
-                <SummaryRow label="日期" value={dropoffForm.date} />
-                <SummaryRow label="航班" value={dropoffForm.flight} />
-                <SummaryRow label="上車時間" value={dropoffForm.time} />
-                <SummaryRow label="上車地址" value={dropoffForm.address} />
-                <SummaryRow label="車型" value={getCarLabel(carType)} />
-                <SummaryRow label="車資" value={`$${dropoffBase}`} />
+              <div style={{ marginBottom: mode === 'both' ? 20 : 0 }}>
+                {mode === 'both' && <div style={{ fontSize: 13, fontWeight: 800, color: S.gold, marginBottom: 8 }}>送機</div>}
+                <Row label="聯絡人" value={dropoffForm.name} />
+                <Row label="電話" value={dropoffForm.phone} />
+                <Row label="日期" value={dropoffForm.date} />
+                <Row label="航班" value={dropoffForm.flight} />
+                <Row label="上車時間" value={dropoffForm.time} />
+                <Row label="上車地址" value={dropoffForm.address} />
+                <Row label="車型" value={getCarLabel(carType)} />
+                <Row label="車資" value={`$${dropoffBase}`} />
               </div>
             )}
 
             {(mode === 'pickup' || mode === 'both') && (
-              <div className="mb-6">
-                {mode === 'both' && <p className="text-yellow-500 font-black text-sm mb-3 uppercase mt-6 pt-6 border-t border-zinc-700">接機</p>}
-                <SummaryRow label="聯絡人" value={pickupForm.name} />
-                <SummaryRow label="電話" value={pickupForm.phone} />
-                <SummaryRow label="日期" value={pickupForm.date} />
-                <SummaryRow label="航班" value={pickupForm.flight} />
-                <SummaryRow label="下車地址" value={pickupForm.address} />
-                <SummaryRow label="車型" value={getCarLabel(carType)} />
-                <SummaryRow label="車資" value={`$${pickupBase}`} />
+              <div>
+                {mode === 'both' && <div style={{ fontSize: 13, fontWeight: 800, color: S.gold, marginBottom: 8, marginTop: 16, paddingTop: 16, borderTop: `1px solid rgba(212,175,55,0.2)` }}>接機</div>}
+                <Row label="聯絡人" value={pickupForm.name} />
+                <Row label="電話" value={pickupForm.phone} />
+                <Row label="日期" value={pickupForm.date} />
+                <Row label="航班" value={pickupForm.flight} />
+                <Row label="下車地址" value={pickupForm.address} />
+                <Row label="車型" value={getCarLabel(carType)} />
+                <Row label="車資" value={`$${pickupBase}`} />
               </div>
             )}
 
-            <div className="mt-8 pt-6 border-t-2 border-yellow-500/30 text-center">
-              <p className="text-zinc-400 text-sm font-bold mb-2">合計金額</p>
-              <p className="text-5xl font-black italic text-yellow-500">${totalPrice}</p>
-              {mode === 'both' && <p className="text-xs text-zinc-500 mt-2">(送機 ${dropoffBase} + 接機 ${pickupBase})</p>}
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: `2px solid rgba(212,175,55,0.3)`, textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: S.textDim, fontWeight: 600 }}>合計金額</p>
+              <p style={{ fontSize: 42, fontWeight: 900, color: S.gold, margin: '4px 0' }}>${totalPrice}</p>
+              {mode === 'both' && <p style={{ fontSize: 12, color: S.textDim }}>(送機 ${dropoffBase} + 接機 ${pickupBase})</p>}
             </div>
 
-            <div className="mt-8">
-              <button disabled={isSubmitting} onClick={handleBooking} className={`w-full py-6 rounded-[24px] font-black text-xl shadow-xl transition-all ${isSubmitting ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-yellow-500 text-black hover:bg-yellow-400 active:scale-95'}`}>
+            <div style={{ marginTop: 24 }}>
+              <PrimaryBtn disabled={isSubmitting} onClick={handleBooking}>
                 {isSubmitting ? '處理中...' : '確認預約'}
-              </button>
+              </PrimaryBtn>
             </div>
-          </div>
-          <div className="flex justify-center w-full py-4">
-            <button onClick={() => window.history.back()} className="px-10 py-3 rounded-full text-white font-black text-lg border border-white/10 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black transition-all italic">回上一頁修改</button>
-          </div>
+          </Card>
+          <BackBtn onClick={() => window.history.back()} label="回上一頁修改" />
         </div>
       </Layout>
     );
@@ -542,37 +682,86 @@ export default function App() {
   if (page === 'payment') {
     const ccLink = getCreditCardLink();
     return (
-      <Layout>
-        <div className="mt-4 space-y-4 pb-24 px-2">
-          <div className="w-full bg-zinc-900 border-2 border-yellow-500 p-8 rounded-[40px] shadow-2xl animate-in zoom-in-95 duration-500 space-y-8 text-center text-white">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-2">
-                <span className="text-green-400 text-3xl font-black">V</span>
-              </div>
-              <h3 className="text-xl font-black italic uppercase mt-2 text-yellow-500">預約已完成</h3>
-              <p className="text-3xl font-black italic mt-2">${totalPrice} TWD</p>
-              <p className="text-xs text-zinc-500 mt-1">訂單編號：{orderRef}</p>
+      <Layout bg={bg}>
+        <Header />
+        <div style={{ padding: '0 4px 80px' }}>
+          <Card highlight>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', background: 'rgba(76,175,80,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
+                fontSize: 28,
+              }}>✓</div>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: S.gold, margin: '0 0 4px' }}>預約已完成</h3>
+              <p style={{ fontSize: 32, fontWeight: 900, margin: '4px 0' }}>${totalPrice} TWD</p>
+              <p style={{ fontSize: 11, color: S.textDim }}>訂單編號：{orderRef}</p>
               {orderCreatedAt && <Countdown createdAt={orderCreatedAt} />}
-              <p className="text-xs text-zinc-500 mt-1">請於 2 小時內完成付款，逾時訂單將自動取消</p>
+              <p style={{ fontSize: 11, color: S.textDim, marginTop: 4 }}>請於 2 小時內完成付款，逾時訂單將自動取消</p>
             </div>
-            <div className="space-y-4">
-              <button onClick={() => setPaidStep('transfer')} className={`w-full py-6 rounded-3xl font-black transition-all ${paidStep === 'transfer' ? 'bg-yellow-500 text-black shadow-xl' : 'bg-black text-zinc-400'}`}>銀行轉帳</button>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* 轉帳 */}
+              <button onClick={() => setPaidStep('transfer')} style={{
+                width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15, cursor: 'pointer', border: 'none',
+                background: paidStep === 'transfer' ? S.gold : 'rgba(255,255,255,0.06)',
+                color: paidStep === 'transfer' ? '#000' : S.textDim, transition: 'all 0.2s',
+              }}>
+                銀行轉帳
+              </button>
+
               {paidStep === 'transfer' && (
-                <div className="bg-black/40 p-6 rounded-3xl border border-yellow-500/20 space-y-4">
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">銀行</span><span className="font-bold">渣打銀行</span></div>
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">銀行代號</span><span className="font-bold">052</span></div>
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">帳號</span><div className="flex items-center gap-2"><span className="font-bold text-sm">12220000471580</span><button onClick={copyAccount} className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 text-xs font-bold">{copied ? '已複製' : '複製'}</button></div></div>
-                  <div className="flex justify-between items-center"><span className="text-zinc-400 text-sm">金額</span><span className="font-black text-yellow-500">${totalPrice}</span></div>
+                <div style={{
+                  background: 'rgba(0,0,0,0.4)', padding: 20, borderRadius: S.radius,
+                  border: `1px solid rgba(212,175,55,0.2)`,
+                }}>
+                  {[
+                    ['銀行', '渣打銀行'],
+                    ['銀行代號', '052'],
+                  ].map(([l, v]) => (
+                    <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <span style={{ fontSize: 13, color: S.textDim }}>{l}</span>
+                      <span style={{ fontWeight: 700 }}>{v}</span>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <span style={{ fontSize: 13, color: S.textDim }}>帳號</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>12220000471580</span>
+                      <button onClick={copyAccount} style={{
+                        padding: '4px 10px', background: S.gold, color: '#000', border: 'none',
+                        borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                      }}>{copied ? '已複製' : '複製'}</button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                    <span style={{ fontSize: 13, color: S.textDim }}>金額</span>
+                    <span style={{ fontWeight: 800, color: S.gold }}>${totalPrice}</span>
+                  </div>
                 </div>
               )}
+
+              {/* 刷卡 */}
               {ccLink ? (
-                <button onClick={() => window.open(ccLink, '_blank')} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">信用卡付款 (須加 3% 手續費)</button>
+                <button onClick={() => window.open(ccLink, '_blank')} style={{
+                  width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15,
+                  cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg, #1565c0, #1976d2)',
+                  color: '#fff', transition: 'all 0.2s',
+                }}>信用卡付款 (須加 3% 手續費)</button>
               ) : (
-                <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-6 rounded-3xl font-black text-lg shadow-xl text-center">刷卡請聯繫客服安排</a>
+                <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" style={{
+                  display: 'block', width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800,
+                  fontSize: 15, textAlign: 'center', textDecoration: 'none',
+                  background: 'linear-gradient(135deg, #1565c0, #1976d2)', color: '#fff',
+                }}>刷卡請聯繫客服安排</a>
               )}
-              <button onClick={handleDone} className="w-full bg-green-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">已付款，通知官方對帳</button>
+
+              {/* 已付款 */}
+              <button onClick={handleDone} style={{
+                width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15,
+                cursor: 'pointer', border: 'none', background: '#2e7d32', color: '#fff', transition: 'all 0.2s',
+              }}>已付款，通知官方對帳</button>
             </div>
-          </div>
+          </Card>
         </div>
       </Layout>
     );
