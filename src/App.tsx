@@ -45,12 +45,12 @@ const CREDIT_CARD_LINKS = {
 };
 
 const BG_IMAGES = [
-  { src: '/pexels-bertelli-1.jpg', label: 'Bertelli 1' },
-  { src: '/pexels-bertelli-2.jpg', label: 'Bertelli 2' },
-  { src: '/pexels-pixabay-531756.jpg', label: 'Pixabay 飛機' },
-  { src: '/pexels-tanathip-rattanatum-2026324.jpg', label: 'Tanathip 車輛' },
-  { src: '/PXL_20240912_093938326.MP.jpg', label: '實拍 1' },
-  { src: '/PXL_20240912_093945075.MP.jpg', label: '實拍 2' },
+  { src: 'https://pickyouup.tw/pexels-bertelli-1.jpg', label: 'Bertelli 1' },
+  { src: 'https://pickyouup.tw/pexels-bertelli-2.jpg', label: 'Bertelli 2' },
+  { src: 'https://pickyouup.tw/pexels-pixabay-531756.jpg', label: 'Pixabay 飛機' },
+  { src: 'https://pickyouup.tw/pexels-tanathip-rattanatum-2026324.jpg', label: 'Tanathip 車輛' },
+  { src: 'https://pickyouup.tw/PXL_20240912_093938326.MP.jpg', label: '實拍 1' },
+  { src: 'https://pickyouup.tw/PXL_20240912_093945075.MP.jpg', label: '實拍 2' },
 ];
 
 const EMPTY_FORM = { name: '', phone: '', address: '', date: '', time: '', flight: '' };
@@ -143,7 +143,7 @@ const Layout = ({ children, bg }) => (
 
 const Header = () => (
   <nav style={{ width: '100%', padding: '20px 0', display: 'flex', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 24 }}>
-    <img src="/logo-gold.png" alt="PickYouUP" style={{ height: 36, width: 'auto' }} />
+    <img src="https://pickyouup.tw/logo-gold.png" alt="PickYouUP" style={{ height: 36, width: 'auto' }} />
   </nav>
 );
 
