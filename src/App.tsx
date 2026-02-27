@@ -461,15 +461,16 @@ export default function App() {
       
       await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
       
-      console.log('🎉 訂單完成，準備顯示成功頁面...');
+      console.log('🎉 訂單完成，準備顯示付款頁面...');
       
       // 自動發送通知給老闆
       const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
       await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
       
       setOrderRef(ref); setOrderCreatedAt(Date.now());
-      // 直接顯示成功訊息，不跳轉到付款頁
-      setPage('success');
+      // 跳轉到付款頁面
+      setPaidStep('none');
+      navigateTo('payment');
       console.log('✅ 流程結束');
       
     } catch (err) {
@@ -859,11 +860,18 @@ ${mode === 'dropoff' ? '地址：' + dropoffForm.address : '地址：' + pickupF
         console.log('Payuni response:', data);
         
         if (data.success && data.paymentUrl) {
+          // 用外部瀏覽器開啟刷卡頁面
+          const paymentUrl = data.paymentUrl;
           if (liff.isInClient()) {
-            liff.openWindow({ url: data.paymentUrl, external: true });
+            // LINE 內：用 external: true 開啟新視窗
+            await liff.openWindow({ url: paymentUrl, external: true });
+            alert('已開啟刷卡頁面💳\n\n刷完卡後，請回到此頁面點擊「已完成付款」按鈕通知我們！');
           } else {
-            window.open(data.paymentUrl, '_blank');
+            window.open(paymentUrl, '_blank');
           }
+        } else if (data.paymentUrl) {
+          // fallback: 直接跳轉
+          window.location.href = data.paymentUrl;
         } else {
           alert('建立刷卡失敗，請聯繫客服');
         }
