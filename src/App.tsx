@@ -295,32 +295,31 @@ export default function App() {
 
   // ── LIFF 初始化 ──
   const [liffDebug, setLiffDebug] = useState('');
+  
+  // 用 User Agent 判斷是否在 LINE 內
+  const isInLineApp = () => {
+    if (typeof window === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    return ua.includes('Line/');
+  };
+
   useEffect(() => {
     liff.init({ liffId: LIFF_ID })
       .then(async () => {
         const inClient = liff.isInClient();
+        const inLineUA = isInLineApp();
         const debugLines = [
           `✅ LIFF init 成功`,
           `🔍 LIFF ID: ${LIFF_ID}`,
           `📋 isInClient(): ${inClient}`,
-          `🔑 isLoggedIn(): ${liff.isLoggedIn()}`
+          `🔧 UA 包含 Line/: ${inLineUA}`
         ];
 
-        if (!inClient) {
+        // 優先用 isInClient()，如果 false 但 UA 有 Line/ 就當作在 LINE 內
+        const reallyInLine = inClient || inLineUA;
+        
+        if (!reallyInLine) {
           debugLines.push('❌ 請確認 LIFF ID 正確且已設定');
-        }
-
-        // 在 LINE App 內部開啟時，即使 isLoggedIn() 為 false 也嘗試取得資料
-        // 因為用戶已經在 LINE 環境中
-        if (!liff.isLoggedIn() && !inClient) {
-          debugLines.push('❌ 未登入 LINE（請透過 LINE 開啟）');
-          setLiffDebug(debugLines.join('\n'));
-          return;
-        }
-        if (inClient) {
-          debugLines.push('✅ 在 LINE App 內，嘗試取得資料...');
-        } else {
-          debugLines.push('✅ 已登入 LINE');
         }
 
         // 1. 取得個人資料（姓名）
