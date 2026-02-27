@@ -439,7 +439,10 @@ export default function App() {
         total_amount: totalPrice, status: 'pending', payment_method: '',
       });
     }
+    console.log('📝 準備寫入訂單:', orders);
     const { error } = await supabase.from('orders').insert(orders);
+    console.log('💾 Supabase 寫入結果:', error ? error : '成功');
+    
     if (!error) {
       console.log('✅ 訂單已存入資料庫，準備發送通知...');
       // 發送通知給老闆
@@ -450,7 +453,7 @@ export default function App() {
       setOrderRef(ref); setOrderCreatedAt(Date.now());
       setPaidStep('choice'); navigateTo('payment');
     } else {
-      alert('預約暫時無法提交，請稍後再試。');
+      alert('預約暫時無法提交，請稍後再試。' + error.message);
       console.error('Supabase error:', error);
     }
     setIsSubmitting(false);
