@@ -315,8 +315,22 @@ export default function App() {
           `🔧 UA 包含 Line/: ${inLineUA}`
         ];
 
-        // 忽略環境判斷，直接嘗試取得資料（因為 LIFF init 成功就代表在 LINE 環境）
-        debugLines.push('🚀 直接嘗試取得資料...');
+        // 檢查是否有 access token，如果沒有就先 login
+        const accessToken = liff.getAccessToken();
+        if (!accessToken) {
+          debugLines.push('🔐 需要登入，呼叫 liff.login()...');
+          try {
+            await liff.login();
+            debugLines.push('✅ 登入成功');
+          } catch (e) {
+            debugLines.push(`❌ login 失敗: ${e.message}`);
+          }
+        } else {
+          debugLines.push('✅ 已有 access token');
+        }
+
+        // 忽略環境判斷，直接嘗試取得資料
+        debugLines.push('🚀 嘗試取得資料...');
 
         // 1. 取得個人資料（姓名）
         try {
