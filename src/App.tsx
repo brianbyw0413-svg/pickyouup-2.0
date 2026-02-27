@@ -462,6 +462,11 @@ export default function App() {
       await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
       
       console.log('🎉 訂單完成，準備顯示成功頁面...');
+      
+      // 自動發送通知給老闆
+      const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
+      await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
+      
       setOrderRef(ref); setOrderCreatedAt(Date.now());
       // 直接顯示成功訊息，不跳轉到付款頁
       setPage('success');
