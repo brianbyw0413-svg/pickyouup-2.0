@@ -275,6 +275,7 @@ export default function App() {
   // 背景設定
   const [bg, setBg] = useState(DEFAULT_BG);
   const [showTool, setShowTool] = useState(false);
+  const editMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit');
   const uBg = (key, val) => setBg((prev) => ({ ...prev, [key]: val }));
 
   // ── LIFF 初始化 ──
@@ -451,53 +452,54 @@ export default function App() {
         </p>
       </div>
 
-      {/* ═══ 設計工具按鈕 ═══ */}
-      <button onClick={() => setShowTool(!showTool)} style={{
-        position: 'fixed', top: 12, right: 12, zIndex: 9999, padding: '6px 14px', borderRadius: 20,
-        background: showTool ? '#333' : S.gold, color: showTool ? S.gold : '#000',
-        fontSize: 11, fontWeight: 700, border: showTool ? `1px solid ${S.gold}` : 'none', cursor: 'pointer',
-      }}>
-        {showTool ? '✕ 關閉' : '⚙ 背景工具'}
-      </button>
-
-      {/* ═══ 設計工具面板 ═══ */}
-      {showTool && (
-        <div style={{
-          position: 'fixed', top: 44, right: 12, zIndex: 9998, width: 280,
-          background: 'rgba(0,0,0,0.95)', borderRadius: 14, border: `1px solid ${S.gold}`,
-          maxHeight: '75vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      {/* ═══ 設計工具（需 ?edit 參數才顯示）═══ */}
+      {editMode && (<>
+        <button onClick={() => setShowTool(!showTool)} style={{
+          position: 'fixed', top: 12, right: 12, zIndex: 9999, padding: '6px 14px', borderRadius: 20,
+          background: showTool ? '#333' : S.gold, color: showTool ? S.gold : '#000',
+          fontSize: 11, fontWeight: 700, border: showTool ? `1px solid ${S.gold}` : 'none', cursor: 'pointer',
         }}>
-          <div style={{ padding: 14, overflowY: 'auto', flex: 1 }}>
-            <div style={{ fontSize: 13, color: S.gold, fontWeight: 700, marginBottom: 12 }}>背景圖片</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
-              {BG_IMAGES.map((img, i) => (
-                <button key={i} onClick={() => uBg('bgIndex', i)} style={{
-                  padding: '7px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer', textAlign: 'left',
-                  background: bg.bgIndex === i ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.04)',
-                  border: bg.bgIndex === i ? `1px solid ${S.gold}` : '1px solid rgba(255,255,255,0.08)',
-                  color: bg.bgIndex === i ? S.gold : '#aaa',
-                }}>
-                  {img.label}
-                </button>
-              ))}
+          {showTool ? '✕ 關閉' : '⚙ 背景工具'}
+        </button>
+
+        {showTool && (
+          <div style={{
+            position: 'fixed', top: 44, right: 12, zIndex: 9998, width: 280,
+            background: 'rgba(0,0,0,0.95)', borderRadius: 14, border: `1px solid ${S.gold}`,
+            maxHeight: '75vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          }}>
+            <div style={{ padding: 14, overflowY: 'auto', flex: 1 }}>
+              <div style={{ fontSize: 13, color: S.gold, fontWeight: 700, marginBottom: 12 }}>背景圖片</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+                {BG_IMAGES.map((img, i) => (
+                  <button key={i} onClick={() => uBg('bgIndex', i)} style={{
+                    padding: '7px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer', textAlign: 'left',
+                    background: bg.bgIndex === i ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.04)',
+                    border: bg.bgIndex === i ? `1px solid ${S.gold}` : '1px solid rgba(255,255,255,0.08)',
+                    color: bg.bgIndex === i ? S.gold : '#aaa',
+                  }}>
+                    {img.label}
+                  </button>
+                ))}
+              </div>
+              <Slider label="模糊度" min={0} max={10} step={0.5} value={bg.blur} onChange={(v) => uBg('blur', v)} />
+              <Slider label="頂部遮罩" min={0} max={1} step={0.05} value={bg.gradientTop} onChange={(v) => uBg('gradientTop', v)} />
+              <Slider label="底部遮罩" min={0} max={1} step={0.05} value={bg.gradientBottom} onChange={(v) => uBg('gradientBottom', v)} />
             </div>
-            <Slider label="模糊度" min={0} max={10} step={0.5} value={bg.blur} onChange={(v) => uBg('blur', v)} />
-            <Slider label="頂部遮罩" min={0} max={1} step={0.05} value={bg.gradientTop} onChange={(v) => uBg('gradientTop', v)} />
-            <Slider label="底部遮罩" min={0} max={1} step={0.05} value={bg.gradientBottom} onChange={(v) => uBg('gradientBottom', v)} />
+            <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(212,175,55,0.3)' }}>
+              <button onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(bg, null, 2));
+                alert('已複製背景設定 JSON！');
+              }} style={{
+                width: '100%', padding: 8, background: S.gold, border: 'none', borderRadius: 8,
+                fontWeight: 700, fontSize: 12, cursor: 'pointer', color: '#000',
+              }}>
+                匯出背景設定
+              </button>
+            </div>
           </div>
-          <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(212,175,55,0.3)' }}>
-            <button onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(bg, null, 2));
-              alert('已複製背景設定 JSON！');
-            }} style={{
-              width: '100%', padding: 8, background: S.gold, border: 'none', borderRadius: 8,
-              fontWeight: 700, fontSize: 12, cursor: 'pointer', color: '#000',
-            }}>
-              匯出背景設定
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </>)}
     </Layout>
   );
 
@@ -740,9 +742,15 @@ export default function App() {
                 </div>
               )}
 
-              {/* 刷卡 */}
+              {/* 刷卡 — 用外部瀏覽器開啟，避免 LIFF WebView 被覆蓋導致流程消失 */}
               {ccLink ? (
-                <button onClick={() => window.open(ccLink, '_blank')} style={{
+                <button onClick={() => {
+                  if (liff.isInClient()) {
+                    liff.openWindow({ url: ccLink, external: true });
+                  } else {
+                    window.open(ccLink, '_blank');
+                  }
+                }} style={{
                   width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15,
                   cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg, #1565c0, #1976d2)',
                   color: '#fff', transition: 'all 0.2s',
