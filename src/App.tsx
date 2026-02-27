@@ -461,10 +461,10 @@ export default function App() {
       
       await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
       
-      console.log('🎉 訂單完成，準備跳轉...');
+      console.log('🎉 訂單完成，準備顯示成功頁面...');
       setOrderRef(ref); setOrderCreatedAt(Date.now());
-      setPaidStep('choice'); 
-      navigateTo('payment');
+      // 直接顯示成功訊息，不跳轉到付款頁
+      setPage('success');
       console.log('✅ 流程結束');
       
     } catch (err) {
@@ -751,6 +751,82 @@ export default function App() {
             </div>
           </Card>
           <BackBtn onClick={() => window.history.back()} label="回上一頁修改" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // 頁面：訂單成功（簡化版，跳過付款）
+  // ═══════════════════════════════════════════════════
+  if (page === 'success') {
+    const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
+    
+    // 發送訂單通知到官方帳號
+    const sendNotification = () => {
+      const msg = `【PickYouUP 訂單預約】
+訂單編號：${orderRef}
+姓名：${mainForm.name}
+電話：${mainForm.phone}
+服務：${getModeLabel(mode)}
+車型：${getCarLabel(carType)}
+日期：${mode === 'pickup' ? pickupForm.date : dropoffForm.date}
+${mode !== 'pickup' ? '時間：' + dropoffForm.time : ''}
+${mode === 'dropoff' ? '地址：' + dropoffForm.address : '地址：' + pickupForm.address}
+金額：$${totalPrice} 元
+
+您好，我想預約以上服務，請確認！`;
+      
+      if (liff.isInClient()) {
+        liff.sendMessages([{ type: 'text', text: msg }])
+          .then(() => liff.closeWindow())
+          .catch(() => window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank'));
+      } else {
+        window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank');
+      }
+    };
+
+    return (
+      <Layout bg={bg}>
+        <Header />
+        <div style={{ padding: '0 4px 80px' }}>
+          <Card highlight>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%', background: 'rgba(76,175,80,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+                fontSize: 36,
+              }}>✅</div>
+              <h3 style={{ fontSize: 24, fontWeight: 800, color: S.gold, margin: '0 0 8px' }}>預約成功！</h3>
+              <p style={{ fontSize: 14, color: S.textDim }}>訂單編號：{orderRef}</p>
+              <p style={{ fontSize: 32, fontWeight: 900, color: '#fff', margin: '16px 0' }}>${totalPrice}</p>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: S.radius, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: S.gold, fontWeight: 700, marginBottom: 12 }}>📋 訂單明細</div>
+              <div style={{ fontSize: 13, color: '#fff', lineHeight: 1.8 }}>
+                <div>👤 姓名：{mainForm.name}</div>
+                <div>📞 電話：{mainForm.phone}</div>
+                <div>🚗 服務：{getModeLabel(mode)}</div>
+                <div>🚌 車型：{getCarLabel(carType)}</div>
+                <div>📅 日期：{mode === 'pickup' ? pickupForm.date : dropoffForm.date}</div>
+                {mode === 'dropoff' && <div>🕐 時間：{dropoffForm.time}</div>}
+                <div>📍 地址：{mode === 'dropoff' ? dropoffForm.address : pickupForm.address}</div>
+              </div>
+            </div>
+
+            <button onClick={sendNotification} style={{
+              width: '100%', padding: 18, borderRadius: S.radius, fontWeight: 800, fontSize: 16,
+              cursor: 'pointer', border: 'none', background: S.gold, color: '#000',
+              boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
+            }}>
+              📱 發送訂單通知給官方
+            </button>
+            
+            <p style={{ fontSize: 12, color: S.textDim, textAlign: 'center', marginTop: 16 }}>
+              點擊上方按鈕將自動發送訂單資訊至 LINE 官方帳號，我們將儘快與您聯繫確認！
+            </p>
+          </Card>
         </div>
       </Layout>
     );
