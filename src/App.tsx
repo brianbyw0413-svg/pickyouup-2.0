@@ -454,19 +454,11 @@ export default function App() {
         return;
       }
       
-      console.log('✅ 訂單已存入資料庫，準備發送通知...');
-      // 發送通知給老闆
-      const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
-      console.log('📋 訂單資料:', { ref, name: mainForm.name, phone: mainForm.phone, mode, carType, totalPrice });
-      
-      await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
-      
-      console.log('🎉 訂單完成，準備顯示付款頁面...');
+      console.log('✅ 訂單已存入資料庫，準備顯示確認頁面...');
       
       setOrderRef(ref); setOrderCreatedAt(Date.now());
-      // 跳轉到付款頁面
-      setPaidStep('none');
-      navigateTo('payment');
+      // 跳轉到訂單確認頁面
+      navigateTo('confirm-payment');
       console.log('✅ 流程結束');
       
     } catch (err) {
@@ -753,6 +745,87 @@ export default function App() {
             </div>
           </Card>
           <BackBtn onClick={() => window.history.back()} label="回上一頁修改" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // 頁面：訂單確認（確認後發送到 LINE）
+  // ═══════════════════════════════════════════════════
+  if (page === 'confirm-payment') {
+    const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
+    const isPickup = mode === 'pickup';
+    
+    // 發送訂單明細到 LINE
+    const sendToLine = () => {
+      const msg = `【PickYouUP 訂單預約】
+訂單編號：${orderRef}
+姓名：${mainForm.name}
+電話：${mainForm.phone}
+服務：${getModeLabel(mode)}
+車型：${getCarLabel(carType)}
+日期：${isPickup ? pickupForm.date : dropoffForm.date}
+${!isPickup ? '時間：' + dropoffForm.time : ''}
+地址：${isPickup ? pickupForm.address : dropoffForm.address}
+金額：$${totalPrice} 元
+
+以上資訊確認無誤，我要付款！`;
+      
+      if (liff.isInClient()) {
+        liff.sendMessages([{ type: 'text', text: msg }])
+          .then(() => liff.closeWindow())
+          .catch(() => window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank'));
+      } else {
+        window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank');
+      }
+    };
+
+    return (
+      <Layout bg={bg}>
+        <Header />
+        <div style={{ padding: '0 4px 80px' }}>
+          <Card highlight>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%', background: 'rgba(212,175,55,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
+                fontSize: 32,
+              }}>📋</div>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: S.gold, margin: '0 0 4px' }}>請確認訂單明細</h3>
+              <p style={{ fontSize: 14, color: S.textDim }}>確認無誤後，點擊下方按鈕進行付款</p>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: S.radius, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: '#fff', lineHeight: 2 }}>
+                <div><span style={{ color: S.textDim }}>訂單編號：</span>{orderRef}</div>
+                <div><span style={{ color: S.textDim }}>姓名：</span>{mainForm.name}</div>
+                <div><span style={{ color: S.textDim }}>電話：</span>{mainForm.phone}</div>
+                <div><span style={{ color: S.textDim }}>服務：</span>{getModeLabel(mode)}</div>
+                <div><span style={{ color: S.textDim }}>車型：</span>{getCarLabel(carType)}</div>
+                <div><span style={{ color: S.textDim }}>日期：</span>{isPickup ? pickupForm.date : dropoffForm.date}</div>
+                {!isPickup && <div><span style={{ color: S.textDim }}>時間：</span>{dropoffForm.time}</div>}
+                <div><span style={{ color: S.textDim }}>地址：</span>{isPickup ? pickupForm.address : dropoffForm.address}</div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: 16, padding: 16, background: 'rgba(212,175,55,0.1)', borderRadius: S.radius }}>
+              <div style={{ fontSize: 14, color: S.textDim }}>金額合計</div>
+              <div style={{ fontSize: 36, fontWeight: 900, color: S.gold }}>${totalPrice}</div>
+            </div>
+
+            <button onClick={sendToLine} style={{
+              width: '100%', padding: 18, borderRadius: S.radius, fontWeight: 800, fontSize: 16,
+              cursor: 'pointer', border: 'none', background: S.gold, color: '#000',
+              boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
+            }}>
+              ✅ 確認，我要付款
+            </button>
+            
+            <p style={{ fontSize: 12, color: S.textDim, textAlign: 'center', marginTop: 16 }}>
+              點擊上方按鈕將自動發送訂單至 LINE，我們會引導您完成付款！
+            </p>
+          </Card>
         </div>
       </Layout>
     );
