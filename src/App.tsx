@@ -315,12 +315,8 @@ export default function App() {
           `🔧 UA 包含 Line/: ${inLineUA}`
         ];
 
-        // 優先用 isInClient()，如果 false 但 UA 有 Line/ 就當作在 LINE 內
-        const reallyInLine = inClient || inLineUA;
-        
-        if (!reallyInLine) {
-          debugLines.push('❌ 請確認 LIFF ID 正確且已設定');
-        }
+        // 忽略環境判斷，直接嘗試取得資料（因為 LIFF init 成功就代表在 LINE 環境）
+        debugLines.push('🚀 直接嘗試取得資料...');
 
         // 1. 取得個人資料（姓名）
         try {
