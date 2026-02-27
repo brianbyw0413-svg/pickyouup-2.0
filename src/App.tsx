@@ -134,11 +134,10 @@ const Background = ({ bg }) => {
   );
 };
 
-const Layout = ({ children, bg, debug }) => (
+const Layout = ({ children, bg }) => (
   <div style={{ minHeight: '100vh', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px', fontFamily: "'Inter','Noto Sans TC',sans-serif", position: 'relative' }}>
     <Background bg={bg} />
     <div style={{ width: '100%', maxWidth: 480, position: 'relative', zIndex: 10 }}>{children}</div>
-    <LiffDebug debug={debug} />
   </div>
 );
 
@@ -148,19 +147,8 @@ const Header = () => (
   </nav>
 );
 
-// LIFF 除錯資訊（開發時用）
-const LiffDebug = ({ debug }) => {
-  if (!debug) return null;
-  return (
-    <div style={{ 
-      position: 'fixed', bottom: 12, left: 12, right: 12, zIndex: 9999,
-      background: 'rgba(0,0,0,0.85)', border: '1px solid #d4af37', borderRadius: 8,
-      padding: 10, fontSize: 11, color: '#fff', whiteSpace: 'pre-wrap', fontFamily: 'monospace'
-    }}>
-      {debug}
-    </div>
-  );
-};
+// LIFF 除錯資訊（已隱藏）
+const LiffDebug = ({ debug }) => null;
 
 const Label = ({ children }) => (
   <div style={{ fontSize: 12, fontWeight: 600, color: S.textDim, marginBottom: 6, letterSpacing: 0.5 }}>{children}</div>
@@ -293,23 +281,16 @@ export default function App() {
   const editMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit');
   const uBg = (key, val) => setBg((prev) => ({ ...prev, [key]: val }));
 
-  // ── LIFF 初始化（參考宜蘭共乘網） ──
-  const [liffDebug, setLiffDebug] = useState('');
-  
+  // ── LIFF 初始化 ──
   useEffect(() => {
     liff.init({ liffId: LIFF_ID })
       .then(() => {
-        setLiffDebug('✅ LIFF 初始化成功');
-        
         if (liff.isLoggedIn()) {
-          // 已登入，取得用戶資料
           liff.getProfile()
             .then(profile => {
               setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
               setPickupForm(prev => ({ ...prev, name: profile.displayName }));
-              setLiffDebug(`✅ 歡迎，${profile.displayName}！`);
               
-              // 嘗試取得電話
               if (liff.getPhoneNumber) {
                 liff.getPhoneNumber()
                   .then(phone => {
@@ -317,23 +298,15 @@ export default function App() {
                       const formatted = formatLiffPhone(phone);
                       setDropoffForm(prev => ({ ...prev, phone: formatted }));
                       setPickupForm(prev => ({ ...prev, phone: formatted }));
-                      setLiffDebug(`✅ 歡迎 ${profile.displayName}，電話: ${formatted}`);
                     }
                   })
                   .catch(() => {});
               }
             })
-            .catch(() => {
-              setLiffDebug('⚠️ 無法取得 LINE 資料，請確認已登入');
-            });
-        } else {
-          // 未登入，不強迫登入，等用戶自己登入
-          setLiffDebug('📱 請透過 LINE 開啟以自動填入資料');
+            .catch(() => {});
         }
       })
-      .catch(err => {
-        setLiffDebug(`❌ LIFF 初始化失敗: ${err.message}`);
-      });
+      .catch(() => {});
   }, []);
 
   // ── 導覽 ──
@@ -459,7 +432,7 @@ export default function App() {
   // 頁面：首頁
   // ═══════════════════════════════════════════════════
   if (page === 'home') return (
-    <Layout bg={bg} debug={liffDebug}>
+    <Layout bg={bg}>
       <Header />
       <div style={{ textAlign: 'center', padding: '20px 0 40px' }}>
         <h2 style={{ fontSize: 'clamp(36px, 10vw, 52px)', fontWeight: 900, fontStyle: 'italic', lineHeight: 1.1, margin: '0 0 48px', textTransform: 'uppercase' }}>
@@ -547,7 +520,7 @@ export default function App() {
   // 頁面：選擇車型
   // ═══════════════════════════════════════════════════
   if (page === 'choice') return (
-    <Layout bg={bg} debug={liffDebug}>
+    <Layout bg={bg}>
       <Header />
       <PageTitle sub="請選擇車型">{getModeLabel(mode)}</PageTitle>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '0 4px' }}>
@@ -601,7 +574,7 @@ export default function App() {
     };
 
     return (
-      <Layout bg={bg} debug={liffDebug}>
+      <Layout bg={bg}>
         <Header />
         <div style={{ padding: '0 4px 80px' }}>
           <Card>
@@ -667,7 +640,7 @@ export default function App() {
     );
 
     return (
-      <Layout bg={bg} debug={liffDebug}>
+      <Layout bg={bg}>
         <Header />
         <div style={{ padding: '0 4px 80px' }}>
           <Card>
@@ -724,7 +697,7 @@ export default function App() {
   if (page === 'payment') {
     const ccLink = getCreditCardLink();
     return (
-      <Layout bg={bg} debug={liffDebug}>
+      <Layout bg={bg}>
         <Header />
         <div style={{ padding: '0 4px 80px' }}>
           <Card highlight>
