@@ -764,25 +764,31 @@ export default function App() {
   if (page === 'success') {
     const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
     
-    // 發送訂單通知到官方帳號
-    const sendNotification = () => {
-      const msg = `【PickYouUP 訂單預約】
+    // 發送付款引導訊息
+    const sendPaymentGuide = () => {
+      const msg = `💰 【PickYouUP 付款方式】
+
+您好 ${mainForm.name}！感謝您的預約！
+
 訂單編號：${orderRef}
-姓名：${mainForm.name}
-電話：${mainForm.phone}
-服務：${getModeLabel(mode)}
-車型：${getCarLabel(carType)}
-日期：${mode === 'pickup' ? pickupForm.date : dropoffForm.date}
-${mode !== 'pickup' ? '時間：' + dropoffForm.time : ''}
-${mode === 'dropoff' ? '地址：' + dropoffForm.address : '地址：' + pickupForm.address}
 金額：$${totalPrice} 元
 
-您好，我想預約以上服務，請確認！`;
+請選擇以下付款方式：
+
+1️⃣ 「轉帳」
+2️⃣ 「刷卡」
+
+請回覆您選擇的付款方式，我會提供帳號或刷卡連結給您，謝謝！`;
       
       if (liff.isInClient()) {
         liff.sendMessages([{ type: 'text', text: msg }])
-          .then(() => liff.closeWindow())
-          .catch(() => window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank'));
+          .then(() => {
+            alert('✅ 已發送付款資訊！\n\n請在 LINE 對話框中選擇「轉帳」或「刷卡」，我們會提供付款資訊給您！');
+            liff.closeWindow();
+          })
+          .catch(() => {
+            window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank');
+          });
       } else {
         window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank');
       }
@@ -817,16 +823,16 @@ ${mode === 'dropoff' ? '地址：' + dropoffForm.address : '地址：' + pickupF
               </div>
             </div>
 
-            <button onClick={sendNotification} style={{
+            <button onClick={sendPaymentGuide} style={{
               width: '100%', padding: 18, borderRadius: S.radius, fontWeight: 800, fontSize: 16,
               cursor: 'pointer', border: 'none', background: S.gold, color: '#000',
               boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
             }}>
-              📱 發送訂單通知給官方
+              💳 我要付款
             </button>
             
             <p style={{ fontSize: 12, color: S.textDim, textAlign: 'center', marginTop: 16 }}>
-              點擊上方按鈕將自動發送訂單資訊至 LINE 官方帳號，我們將儘快與您聯繫確認！
+              點擊上方按鈕回到 LINE，我們會引導您選擇付款方式！
             </p>
           </Card>
         </div>
