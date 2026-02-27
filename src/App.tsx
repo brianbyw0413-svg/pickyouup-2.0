@@ -11,7 +11,7 @@ const supabase = createClient(
 // 常數
 // ═══════════════════════════════════════════════════
 
-const LIFF_ID = '2009264434';
+const LIFF_ID = '2009264434-KuMggvkE';
 const LINE_ID_ID = '@835acfgq';
 const LINE_OA_URL = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID_ID)}/`;
 
