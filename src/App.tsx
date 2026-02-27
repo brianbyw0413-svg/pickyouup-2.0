@@ -463,10 +463,6 @@ export default function App() {
       
       console.log('🎉 訂單完成，準備顯示付款頁面...');
       
-      // 自動發送通知給老闆
-      const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
-      await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
-      
       setOrderRef(ref); setOrderCreatedAt(Date.now());
       // 跳轉到付款頁面
       setPaidStep('none');
