@@ -297,31 +297,45 @@ export default function App() {
   const [liffDebug, setLiffDebug] = useState('');
   useEffect(() => {
     liff.init({ liffId: LIFF_ID })
-      .then(() => {
-        setLiffDebug('✅ LIFF 初始化成功');
+      .then(async () => {
+        const debugLines = ['✅ LIFF 初始化成功'];
+        debugLines.push(`📋 環境: ${liff.isInClient() ? 'LINE App 內' : '外部瀏覽器'}`);
+
         if (!liff.isLoggedIn()) {
-          setLiffDebug('❌ 未登入 LINE，請透過 LINE 開啟此頁面');
+          debugLines.push('❌ 未登入 LINE');
+          setLiffDebug(debugLines.join('\n'));
           return;
         }
-        setLiffDebug('✅ 已登入，嘗試取得個人資料...');
-        Promise.all([
-          liff.getProfile().catch(e => { console.error('Profile error:', e); return null; }),
-          liff.getPhoneNumber().catch(e => { console.error('Phone error:', e); return null; })
-        ]).then(([profile, phoneNumber]) => {
-          if (profile) {
-            setLiffDebug(prev => prev + `\n👤 姓名: ${profile.displayName}`);
+        debugLines.push('✅ 已登入 LINE');
+
+        // 1. 取得個人資料（姓名）
+        try {
+          const profile = await liff.getProfile();
+          if (profile?.displayName) {
+            debugLines.push(`👤 姓名: ${profile.displayName}`);
             setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
             setPickupForm(prev => ({ ...prev, name: profile.displayName }));
           }
-          if (phoneNumber) {
-            const formattedPhone = formatLiffPhone(phoneNumber);
-            setLiffDebug(prev => prev + `\n📱 電話: ${formattedPhone}`);
+        } catch (e) {
+          debugLines.push(`❌ getProfile 失敗: ${e.message}`);
+        }
+
+        // 2. 取得電話（透過 ID Token 解碼）
+        try {
+          const idToken = liff.getDecodedIDToken();
+          if (idToken?.phone_number) {
+            const formattedPhone = formatLiffPhone(idToken.phone_number);
+            debugLines.push(`📱 電話 (IDToken): ${formattedPhone}`);
             setDropoffForm(prev => ({ ...prev, phone: formattedPhone || prev.phone }));
             setPickupForm(prev => ({ ...prev, phone: formattedPhone || prev.phone }));
           } else {
-            setLiffDebug(prev => prev + '\n⚠️ 無法取得電話（需 LINE 官方帳號開通電話權限）');
+            debugLines.push('⚠️ ID Token 無電話（需在 LINE Login Channel 開啟 phone scope）');
           }
-        });
+        } catch (e) {
+          debugLines.push(`⚠️ getDecodedIDToken: ${e.message}`);
+        }
+
+        setLiffDebug(debugLines.join('\n'));
       })
       .catch(err => {
         console.error('LIFF Init error', err);
