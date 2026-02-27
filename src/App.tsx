@@ -731,7 +731,39 @@ export default function App() {
   // 頁面：付款
   // ═══════════════════════════════════════════════════
   if (page === 'payment') {
-    const ccLink = getCreditCardLink();
+    const [isProcessingCC, setIsProcessingCC] = useState(false);
+    
+    // 呼叫 Payuni API 建立刷卡
+    const handleCreditCard = async () => {
+      setIsProcessingCC(true);
+      try {
+        const response = await fetch('https://vtvytcrkoqbluvczyepm.supabase.co/functions/v1/payuni-create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderRef: orderRef,
+            amount: totalPrice
+          })
+        });
+        const data = await response.json();
+        console.log('Payuni response:', data);
+        
+        if (data.success && data.paymentUrl) {
+          if (liff.isInClient()) {
+            liff.openWindow({ url: data.paymentUrl, external: true });
+          } else {
+            window.open(data.paymentUrl, '_blank');
+          }
+        } else {
+          alert('建立刷卡失敗，請聯繫客服');
+        }
+      } catch (e) {
+        console.error('刷卡錯誤:', e);
+        alert('刷卡發生錯誤，請使用轉帳或聯繫客服');
+      }
+      setIsProcessingCC(false);
+    };
+
     return (
       <Layout bg={bg}>
         <Header />
@@ -791,26 +823,13 @@ export default function App() {
                 </div>
               )}
 
-              {/* 刷卡 — 用外部瀏覽器開啟，避免 LIFF WebView 被覆蓋導致流程消失 */}
-              {ccLink ? (
-                <button onClick={() => {
-                  if (liff.isInClient()) {
-                    liff.openWindow({ url: ccLink, external: true });
-                  } else {
-                    window.open(ccLink, '_blank');
-                  }
-                }} style={{
-                  width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15,
-                  cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg, #1565c0, #1976d2)',
-                  color: '#fff', transition: 'all 0.2s',
-                }}>信用卡付款 (須加 3% 手續費)</button>
-              ) : (
-                <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" style={{
-                  display: 'block', width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800,
-                  fontSize: 15, textAlign: 'center', textDecoration: 'none',
-                  background: 'linear-gradient(135deg, #1565c0, #1976d2)', color: '#fff',
-                }}>刷卡請聯繫客服安排</a>
-              )}
+              {/* 刷卡 — 動態呼叫 Payuni API */}
+              <button onClick={handleCreditCard} disabled={isProcessingCC} style={{
+                width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15,
+                cursor: isProcessingCC ? 'not-allowed' : 'pointer', border: 'none', 
+                background: isProcessingCC ? '#1565c0aa' : 'linear-gradient(135deg, #1565c0, #1976d2)',
+                color: '#fff', transition: 'all 0.2s',
+              }}>{isProcessingCC ? '處理中...' : '信用卡付款 (須加 3% 手續費)'}</button>
 
               {/* 已付款 - 加大加強顯示 */}
               <div style={{ marginTop: 8, padding: '12px', background: 'rgba(46,125,50,0.15)', borderRadius: S.radius, border: '1px solid rgba(46,125,50,0.3)' }}>
