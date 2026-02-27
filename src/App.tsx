@@ -31,7 +31,8 @@ const notifyBoss = async (orderRef, name, phone, service, carType, amount) => {
 請確認收款並安排車輛！`;
 
   try {
-    await fetch('https://api.line.me/v2/bot/message/push', {
+    console.log('🔔 準備發送 LINE 通知給老闆...');
+    const response = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,8 +43,15 @@ const notifyBoss = async (orderRef, name, phone, service, carType, amount) => {
         messages: [{ type: 'text', text: message }]
       })
     });
+    const result = await response.json();
+    console.log('📬 LINE 通知結果:', result);
+    if (!response.ok) {
+      console.error('❌ 發送失敗:', result);
+    } else {
+      console.log('✅ 通知已發送！');
+    }
   } catch (e) {
-    console.error('通知老闆失敗:', e);
+    console.error('⚠️ 通知錯誤:', e);
   }
 };
 
@@ -433,8 +441,10 @@ export default function App() {
     }
     const { error } = await supabase.from('orders').insert(orders);
     if (!error) {
+      console.log('✅ 訂單已存入資料庫，準備發送通知...');
       // 發送通知給老闆
       const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
+      console.log('📋 訂單資料:', { ref, name: mainForm.name, phone: mainForm.phone, mode, carType, totalPrice });
       await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
       
       setOrderRef(ref); setOrderCreatedAt(Date.now());
