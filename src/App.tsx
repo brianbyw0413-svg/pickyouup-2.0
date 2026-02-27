@@ -298,9 +298,17 @@ export default function App() {
   useEffect(() => {
     liff.init({ liffId: LIFF_ID })
       .then(async () => {
-        const debugLines = ['✅ LIFF 初始化成功'];
         const inClient = liff.isInClient();
-        debugLines.push(`📋 環境: ${inClient ? 'LINE App 內' : '外部瀏覽器'}`);
+        const debugLines = [
+          `✅ LIFF init 成功`,
+          `🔍 LIFF ID: ${LIFF_ID}`,
+          `📋 isInClient(): ${inClient}`,
+          `🔑 isLoggedIn(): ${liff.isLoggedIn()}`
+        ];
+
+        if (!inClient) {
+          debugLines.push('❌ 請確認 LIFF ID 正確且已設定');
+        }
 
         // 在 LINE App 內部開啟時，即使 isLoggedIn() 為 false 也嘗試取得資料
         // 因為用戶已經在 LINE 環境中
