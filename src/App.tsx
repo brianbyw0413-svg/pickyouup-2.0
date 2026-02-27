@@ -317,11 +317,14 @@ export default function App() {
 
         // 1. 取得個人資料（姓名）
         try {
+          debugLines.push('🔄 呼叫 getProfile()...');
           const profile = await liff.getProfile();
           if (profile?.displayName) {
             debugLines.push(`👤 姓名: ${profile.displayName}`);
             setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
             setPickupForm(prev => ({ ...prev, name: profile.displayName }));
+          } else {
+            debugLines.push('⚠️ getProfile 成功但無 displayName');
           }
         } catch (e) {
           debugLines.push(`❌ getProfile 失敗: ${e.message}`);
