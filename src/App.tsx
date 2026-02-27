@@ -299,14 +299,21 @@ export default function App() {
     liff.init({ liffId: LIFF_ID })
       .then(async () => {
         const debugLines = ['✅ LIFF 初始化成功'];
-        debugLines.push(`📋 環境: ${liff.isInClient() ? 'LINE App 內' : '外部瀏覽器'}`);
+        const inClient = liff.isInClient();
+        debugLines.push(`📋 環境: ${inClient ? 'LINE App 內' : '外部瀏覽器'}`);
 
-        if (!liff.isLoggedIn()) {
-          debugLines.push('❌ 未登入 LINE');
+        // 在 LINE App 內部開啟時，即使 isLoggedIn() 為 false 也嘗試取得資料
+        // 因為用戶已經在 LINE 環境中
+        if (!liff.isLoggedIn() && !inClient) {
+          debugLines.push('❌ 未登入 LINE（請透過 LINE 開啟）');
           setLiffDebug(debugLines.join('\n'));
           return;
         }
-        debugLines.push('✅ 已登入 LINE');
+        if (inClient) {
+          debugLines.push('✅ 在 LINE App 內，嘗試取得資料...');
+        } else {
+          debugLines.push('✅ 已登入 LINE');
+        }
 
         // 1. 取得個人資料（姓名）
         try {
