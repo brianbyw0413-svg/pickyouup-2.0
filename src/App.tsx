@@ -414,49 +414,65 @@ export default function App() {
 
   // ── 提交訂單 ──
   const handleBooking = async () => {
-    setIsSubmitting(true);
-    const ref = generateOrderRef();
-    const orders = [];
-    if (mode === 'dropoff' || mode === 'both') {
-      orders.push({
-        order_ref: ref, service_mode: 'dropoff', car_type: carType,
-        contact_name: dropoffForm.name.trim(), contact_phone: dropoffForm.phone.replace(/\D/g, ''),
-        pickup_address: dropoffForm.address.trim(), dropoff_address: '',
-        service_date: dropoffForm.date, pickup_time: dropoffForm.time,
-        flight_number: dropoffForm.flight.trim().toUpperCase(),
-        amount: mode === 'both' ? dropoffBase : totalPrice,
-        total_amount: totalPrice, status: 'pending', payment_method: '',
-      });
-    }
-    if (mode === 'pickup' || mode === 'both') {
-      orders.push({
-        order_ref: ref, service_mode: 'pickup', car_type: carType,
-        contact_name: pickupForm.name.trim(), contact_phone: pickupForm.phone.replace(/\D/g, ''),
-        pickup_address: '', dropoff_address: pickupForm.address.trim(),
-        service_date: pickupForm.date, pickup_time: '',
-        flight_number: pickupForm.flight.trim().toUpperCase(),
-        amount: mode === 'both' ? pickupBase : totalPrice,
-        total_amount: totalPrice, status: 'pending', payment_method: '',
-      });
-    }
-    console.log('📝 準備寫入訂單:', orders);
-    const { error } = await supabase.from('orders').insert(orders);
-    console.log('💾 Supabase 寫入結果:', error ? error : '成功');
-    
-    if (!error) {
+    try {
+      setIsSubmitting(true);
+      console.log('🔄 開始處理訂單...');
+      
+      const ref = generateOrderRef();
+      const orders = [];
+      if (mode === 'dropoff' || mode === 'both') {
+        orders.push({
+          order_ref: ref, service_mode: 'dropoff', car_type: carType,
+          contact_name: dropoffForm.name.trim(), contact_phone: dropoffForm.phone.replace(/\D/g, ''),
+          pickup_address: dropoffForm.address.trim(), dropoff_address: '',
+          service_date: dropoffForm.date, pickup_time: dropoffForm.time,
+          flight_number: dropoffForm.flight.trim().toUpperCase(),
+          amount: mode === 'both' ? dropoffBase : totalPrice,
+          total_amount: totalPrice, status: 'pending', payment_method: '',
+        });
+      }
+      if (mode === 'pickup' || mode === 'both') {
+        orders.push({
+          order_ref: ref, service_mode: 'pickup', car_type: carType,
+          contact_name: pickupForm.name.trim(), contact_phone: pickupForm.phone.replace(/\D/g, ''),
+          pickup_address: '', dropoff_address: pickupForm.address.trim(),
+          service_date: pickupForm.date, pickup_time: '',
+          flight_number: pickupForm.flight.trim().toUpperCase(),
+          amount: mode === 'both' ? pickupBase : totalPrice,
+          total_amount: totalPrice, status: 'pending', payment_method: '',
+        });
+      }
+      
+      console.log('📝 準備寫入訂單:', orders);
+      const { error } = await supabase.from('orders').insert(orders);
+      console.log('💾 Supabase 寫入結果:', error ? error : '成功');
+      
+      if (error) {
+        alert('預約暫時無法提交，請稍後再試。錯誤: ' + error.message);
+        console.error('❌ Supabase error:', error);
+        setIsSubmitting(false);
+        return;
+      }
+      
       console.log('✅ 訂單已存入資料庫，準備發送通知...');
       // 發送通知給老闆
       const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
       console.log('📋 訂單資料:', { ref, name: mainForm.name, phone: mainForm.phone, mode, carType, totalPrice });
+      
       await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
       
+      console.log('🎉 訂單完成，準備跳轉...');
       setOrderRef(ref); setOrderCreatedAt(Date.now());
-      setPaidStep('choice'); navigateTo('payment');
-    } else {
-      alert('預約暫時無法提交，請稍後再試。' + error.message);
-      console.error('Supabase error:', error);
+      setPaidStep('choice'); 
+      navigateTo('payment');
+      console.log('✅ 流程結束');
+      
+    } catch (err) {
+      console.error('💥 發生錯誤:', err);
+      alert('發生錯誤，請稍後再試。錯誤: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleDone = () => {
