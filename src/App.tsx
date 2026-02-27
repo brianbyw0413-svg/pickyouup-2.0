@@ -134,10 +134,11 @@ const Background = ({ bg }) => {
   );
 };
 
-const Layout = ({ children, bg }) => (
+const Layout = ({ children, bg, debug }) => (
   <div style={{ minHeight: '100vh', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px', fontFamily: "'Inter','Noto Sans TC',sans-serif", position: 'relative' }}>
     <Background bg={bg} />
     <div style={{ width: '100%', maxWidth: 480, position: 'relative', zIndex: 10 }}>{children}</div>
+    <LiffDebug debug={debug} />
   </div>
 );
 
@@ -146,6 +147,20 @@ const Header = () => (
     <img src="https://pickyouup.tw/logo-gold.png" alt="PickYouUP" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
   </nav>
 );
+
+// LIFF 除錯資訊（開發時用）
+const LiffDebug = ({ debug }) => {
+  if (!debug) return null;
+  return (
+    <div style={{ 
+      position: 'fixed', bottom: 12, left: 12, right: 12, zIndex: 9999,
+      background: 'rgba(0,0,0,0.85)', border: '1px solid #d4af37', borderRadius: 8,
+      padding: 10, fontSize: 11, color: '#fff', whiteSpace: 'pre-wrap', fontFamily: 'monospace'
+    }}>
+      {debug}
+    </div>
+  );
+};
 
 const Label = ({ children }) => (
   <div style={{ fontSize: 12, fontWeight: 600, color: S.textDim, marginBottom: 6, letterSpacing: 0.5 }}>{children}</div>
@@ -279,21 +294,39 @@ export default function App() {
   const uBg = (key, val) => setBg((prev) => ({ ...prev, [key]: val }));
 
   // ── LIFF 初始化 ──
+  const [liffDebug, setLiffDebug] = useState('');
   useEffect(() => {
     liff.init({ liffId: LIFF_ID })
       .then(() => {
-        if (liff.isLoggedIn()) {
-          Promise.all([
-            liff.getProfile(),
-            liff.getPhoneNumber().catch(() => null)
-          ]).then(([profile, phoneNumber]) => {
-            const formattedPhone = formatLiffPhone(phoneNumber);
-            setDropoffForm(prev => ({ ...prev, name: profile.displayName, phone: formattedPhone || prev.phone }));
-            setPickupForm(prev => ({ ...prev, name: profile.displayName, phone: formattedPhone || prev.phone }));
-          });
+        setLiffDebug('✅ LIFF 初始化成功');
+        if (!liff.isLoggedIn()) {
+          setLiffDebug('❌ 未登入 LINE，請透過 LINE 開啟此頁面');
+          return;
         }
+        setLiffDebug('✅ 已登入，嘗試取得個人資料...');
+        Promise.all([
+          liff.getProfile().catch(e => { console.error('Profile error:', e); return null; }),
+          liff.getPhoneNumber().catch(e => { console.error('Phone error:', e); return null; })
+        ]).then(([profile, phoneNumber]) => {
+          if (profile) {
+            setLiffDebug(prev => prev + `\n👤 姓名: ${profile.displayName}`);
+            setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
+            setPickupForm(prev => ({ ...prev, name: profile.displayName }));
+          }
+          if (phoneNumber) {
+            const formattedPhone = formatLiffPhone(phoneNumber);
+            setLiffDebug(prev => prev + `\n📱 電話: ${formattedPhone}`);
+            setDropoffForm(prev => ({ ...prev, phone: formattedPhone || prev.phone }));
+            setPickupForm(prev => ({ ...prev, phone: formattedPhone || prev.phone }));
+          } else {
+            setLiffDebug(prev => prev + '\n⚠️ 無法取得電話（需 LINE 官方帳號開通電話權限）');
+          }
+        });
       })
-      .catch(err => console.error('LIFF Init error', err));
+      .catch(err => {
+        console.error('LIFF Init error', err);
+        setLiffDebug(`❌ LIFF 初始化失敗: ${err.message}`);
+      });
   }, []);
 
   // ── 導覽 ──
@@ -419,7 +452,7 @@ export default function App() {
   // 頁面：首頁
   // ═══════════════════════════════════════════════════
   if (page === 'home') return (
-    <Layout bg={bg}>
+    <Layout bg={bg} debug={liffDebug}>
       <Header />
       <div style={{ textAlign: 'center', padding: '20px 0 40px' }}>
         <h2 style={{ fontSize: 'clamp(36px, 10vw, 52px)', fontWeight: 900, fontStyle: 'italic', lineHeight: 1.1, margin: '0 0 48px', textTransform: 'uppercase' }}>
@@ -507,7 +540,7 @@ export default function App() {
   // 頁面：選擇車型
   // ═══════════════════════════════════════════════════
   if (page === 'choice') return (
-    <Layout bg={bg}>
+    <Layout bg={bg} debug={liffDebug}>
       <Header />
       <PageTitle sub="請選擇車型">{getModeLabel(mode)}</PageTitle>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '0 4px' }}>
@@ -561,7 +594,7 @@ export default function App() {
     };
 
     return (
-      <Layout bg={bg}>
+      <Layout bg={bg} debug={liffDebug}>
         <Header />
         <div style={{ padding: '0 4px 80px' }}>
           <Card>
@@ -627,7 +660,7 @@ export default function App() {
     );
 
     return (
-      <Layout bg={bg}>
+      <Layout bg={bg} debug={liffDebug}>
         <Header />
         <div style={{ padding: '0 4px 80px' }}>
           <Card>
@@ -684,7 +717,7 @@ export default function App() {
   if (page === 'payment') {
     const ccLink = getCreditCardLink();
     return (
-      <Layout bg={bg}>
+      <Layout bg={bg} debug={liffDebug}>
         <Header />
         <div style={{ padding: '0 4px 80px' }}>
           <Card highlight>
