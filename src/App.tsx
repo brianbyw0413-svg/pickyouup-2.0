@@ -812,11 +812,19 @@ export default function App() {
                 }}>刷卡請聯繫客服安排</a>
               )}
 
-              {/* 已付款 */}
-              <button onClick={handleDone} style={{
-                width: '100%', padding: 16, borderRadius: S.radius, fontWeight: 800, fontSize: 15,
-                cursor: 'pointer', border: 'none', background: '#2e7d32', color: '#fff', transition: 'all 0.2s',
-              }}>已付款，通知官方對帳</button>
+              {/* 已付款 - 加大加強顯示 */}
+              <div style={{ marginTop: 8, padding: '12px', background: 'rgba(46,125,50,0.15)', borderRadius: S.radius, border: '1px solid rgba(46,125,50,0.3)' }}>
+                <div style={{ fontSize: 12, color: '#81c784', marginBottom: 8, textAlign: 'center' }}>
+                  💳 完成付款後，請務必點擊下方按鈕通知我們！
+                </div>
+                <button onClick={handleDone} style={{
+                  width: '100%', padding: 18, borderRadius: S.radius, fontWeight: 800, fontSize: 16,
+                  cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg, #2e7d32, #43a047)', 
+                  color: '#fff', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(46,125,50,0.3)',
+                }}>
+                  ✅ 已完成付款，點擊通知對帳
+                </button>
+              </div>
             </div>
           </Card>
         </div>
