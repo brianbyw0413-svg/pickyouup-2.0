@@ -315,51 +315,84 @@ export default function App() {
           `🔧 UA 包含 Line/: ${inLineUA}`
         ];
 
-        // 檢查是否有 access token，如果沒有就先 login
+        // 檢查是否有 access token，沒有的話嘗試登入
         const accessToken = liff.getAccessToken();
         if (!accessToken) {
-          debugLines.push('🔐 需要登入，呼叫 liff.login()...');
+          debugLines.push('🔐 無 access token，嘗試 liff.login()...');
           try {
             await liff.login();
-            debugLines.push('✅ 登入成功');
+            debugLines.push('✅ 登入完成');
           } catch (e) {
-            debugLines.push(`❌ login 失敗: ${e.message}`);
+            debugLines.push(`⚠️ login 失敗: ${e.message}（繼續嘗試）`);
           }
         } else {
-          debugLines.push('✅ 已有 access token');
+          debugLines.push('✅ 有 access token');
         }
 
-        // 忽略環境判斷，直接嘗試取得資料
-        debugLines.push('🚀 嘗試取得資料...');
-
-        // 1. 取得個人資料（姓名）
+        // 嘗試用 LIFF SDK 取得資料
+        let gotData = false;
+        
+        // 1. 嘗試用 LIFF getProfile()
         try {
-          debugLines.push('🔄 呼叫 getProfile()...');
+          debugLines.push('🔄 嘗試 liff.getProfile()...');
           const profile = await liff.getProfile();
           if (profile?.displayName) {
             debugLines.push(`👤 姓名: ${profile.displayName}`);
             setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
             setPickupForm(prev => ({ ...prev, name: profile.displayName }));
-          } else {
-            debugLines.push('⚠️ getProfile 成功但無 displayName');
+            gotData = true;
           }
         } catch (e) {
-          debugLines.push(`❌ getProfile 失敗: ${e.message}`);
+          debugLines.push(`⚠️ liff.getProfile 失敗: ${e.message}`);
         }
 
-        // 2. 取得電話（透過 ID Token 解碼）
-        try {
-          const idToken = liff.getDecodedIDToken();
-          if (idToken?.phone_number) {
-            const formattedPhone = formatLiffPhone(idToken.phone_number);
-            debugLines.push(`📱 電話 (IDToken): ${formattedPhone}`);
-            setDropoffForm(prev => ({ ...prev, phone: formattedPhone || prev.phone }));
-            setPickupForm(prev => ({ ...prev, phone: formattedPhone || prev.phone }));
-          } else {
-            debugLines.push('⚠️ ID Token 無電話（需在 LINE Login Channel 開啟 phone scope）');
+        // 2. 嘗試用 getDecodedIDToken() 取得電話
+        if (!gotData) {
+          try {
+            const idToken = liff.getDecodedIDToken();
+            if (idToken?.phone_number) {
+              const formattedPhone = formatLiffPhone(idToken.phone_number);
+              debugLines.push(`📱 電話: ${formattedPhone}`);
+              setDropoffForm(prev => ({ ...prev, phone: formattedPhone }));
+              setPickupForm(prev => ({ ...prev, phone: formattedPhone }));
+              gotData = true;
+            }
+            if (idToken?.name) {
+              debugLines.push(`👤 姓名: ${idToken.name}`);
+              setDropoffForm(prev => ({ ...prev, name: idToken.name }));
+              setPickupForm(prev => ({ ...prev, name: idToken.name }));
+              gotData = true;
+            }
+          } catch (e) {
+            debugLines.push(`⚠️ getDecodedIDToken 失敗: ${e.message}`);
           }
-        } catch (e) {
-          debugLines.push(`⚠️ getDecodedIDToken: ${e.message}`);
+        }
+
+        // 3. 如果都失敗，用Messaging API 試試
+        if (!gotData) {
+          debugLines.push('🔄 嘗試用 Messaging API...');
+          try {
+            const liffAccessToken = liff.getAccessToken();
+            if (liffAccessToken) {
+              // 用 LINE Login API 取得用戶資訊
+              const res = await fetch('https://api.line.me/v2/profile', {
+                headers: { 'Authorization': `Bearer ${liffAccessToken}` }
+              });
+              if (res.ok) {
+                const data = await res.json();
+                debugLines.push(`👤 (API) 姓名: ${data.displayName}`);
+                setDropoffForm(prev => ({ ...prev, name: data.displayName }));
+                setPickupForm(prev => ({ ...prev, name: data.displayName }));
+                gotData = true;
+              }
+            }
+          } catch (e) {
+            debugLines.push(`⚠️ Messaging API 失敗: ${e.message}`);
+          }
+        }
+
+        if (!gotData) {
+          debugLines.push('❓ 請確認 LINE Login Channel 已開通必要權限');
         }
 
         setLiffDebug(debugLines.join('\n'));
