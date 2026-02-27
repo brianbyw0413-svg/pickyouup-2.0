@@ -11,7 +11,7 @@ const supabase = createClient(
 // 常數
 // ═══════════════════════════════════════════════════
 
-const LIFF_ID = '2009264434-KuMggvkE';
+const LIFF_ID = '2009262593-SeB2VF83';
 const LINE_ID_ID = '@835acfgq';
 const LINE_OA_URL = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID_ID)}/`;
 
@@ -293,112 +293,45 @@ export default function App() {
   const editMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit');
   const uBg = (key, val) => setBg((prev) => ({ ...prev, [key]: val }));
 
-  // ── LIFF 初始化 ──
+  // ── LIFF 初始化（參考宜蘭共乘網） ──
   const [liffDebug, setLiffDebug] = useState('');
   
-  // 用 User Agent 判斷是否在 LINE 內
-  const isInLineApp = () => {
-    if (typeof window === 'undefined') return false;
-    const ua = navigator.userAgent || '';
-    return ua.includes('Line/');
-  };
-
   useEffect(() => {
     liff.init({ liffId: LIFF_ID })
-      .then(async () => {
-        const inClient = liff.isInClient();
-        const inLineUA = isInLineApp();
-        const debugLines = [
-          `✅ LIFF init 成功`,
-          `🔍 LIFF ID: ${LIFF_ID}`,
-          `📋 isInClient(): ${inClient}`,
-          `🔧 UA 包含 Line/: ${inLineUA}`
-        ];
-
-        // 檢查是否有 access token，沒有的話嘗試登入
-        const accessToken = liff.getAccessToken();
-        if (!accessToken) {
-          debugLines.push('🔐 無 access token，嘗試 liff.login()...');
-          try {
-            await liff.login();
-            debugLines.push('✅ 登入完成');
-          } catch (e) {
-            debugLines.push(`⚠️ login 失敗: ${e.message}（繼續嘗試）`);
-          }
-        } else {
-          debugLines.push('✅ 有 access token');
-        }
-
-        // 嘗試用 LIFF SDK 取得資料
-        let gotData = false;
+      .then(() => {
+        setLiffDebug('✅ LIFF 初始化成功');
         
-        // 1. 嘗試用 LIFF getProfile()
-        try {
-          debugLines.push('🔄 嘗試 liff.getProfile()...');
-          const profile = await liff.getProfile();
-          if (profile?.displayName) {
-            debugLines.push(`👤 姓名: ${profile.displayName}`);
-            setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
-            setPickupForm(prev => ({ ...prev, name: profile.displayName }));
-            gotData = true;
-          }
-        } catch (e) {
-          debugLines.push(`⚠️ liff.getProfile 失敗: ${e.message}`);
-        }
-
-        // 2. 嘗試用 getDecodedIDToken() 取得電話
-        if (!gotData) {
-          try {
-            const idToken = liff.getDecodedIDToken();
-            if (idToken?.phone_number) {
-              const formattedPhone = formatLiffPhone(idToken.phone_number);
-              debugLines.push(`📱 電話: ${formattedPhone}`);
-              setDropoffForm(prev => ({ ...prev, phone: formattedPhone }));
-              setPickupForm(prev => ({ ...prev, phone: formattedPhone }));
-              gotData = true;
-            }
-            if (idToken?.name) {
-              debugLines.push(`👤 姓名: ${idToken.name}`);
-              setDropoffForm(prev => ({ ...prev, name: idToken.name }));
-              setPickupForm(prev => ({ ...prev, name: idToken.name }));
-              gotData = true;
-            }
-          } catch (e) {
-            debugLines.push(`⚠️ getDecodedIDToken 失敗: ${e.message}`);
-          }
-        }
-
-        // 3. 如果都失敗，用Messaging API 試試
-        if (!gotData) {
-          debugLines.push('🔄 嘗試用 Messaging API...');
-          try {
-            const liffAccessToken = liff.getAccessToken();
-            if (liffAccessToken) {
-              // 用 LINE Login API 取得用戶資訊
-              const res = await fetch('https://api.line.me/v2/profile', {
-                headers: { 'Authorization': `Bearer ${liffAccessToken}` }
-              });
-              if (res.ok) {
-                const data = await res.json();
-                debugLines.push(`👤 (API) 姓名: ${data.displayName}`);
-                setDropoffForm(prev => ({ ...prev, name: data.displayName }));
-                setPickupForm(prev => ({ ...prev, name: data.displayName }));
-                gotData = true;
+        if (liff.isLoggedIn()) {
+          // 已登入，取得用戶資料
+          liff.getProfile()
+            .then(profile => {
+              setDropoffForm(prev => ({ ...prev, name: profile.displayName }));
+              setPickupForm(prev => ({ ...prev, name: profile.displayName }));
+              setLiffDebug(`✅ 歡迎，${profile.displayName}！`);
+              
+              // 嘗試取得電話
+              if (liff.getPhoneNumber) {
+                liff.getPhoneNumber()
+                  .then(phone => {
+                    if (phone) {
+                      const formatted = formatLiffPhone(phone);
+                      setDropoffForm(prev => ({ ...prev, phone: formatted }));
+                      setPickupForm(prev => ({ ...prev, phone: formatted }));
+                      setLiffDebug(`✅ 歡迎 ${profile.displayName}，電話: ${formatted}`);
+                    }
+                  })
+                  .catch(() => {});
               }
-            }
-          } catch (e) {
-            debugLines.push(`⚠️ Messaging API 失敗: ${e.message}`);
-          }
+            })
+            .catch(() => {
+              setLiffDebug('⚠️ 無法取得 LINE 資料，請確認已登入');
+            });
+        } else {
+          // 未登入，不強迫登入，等用戶自己登入
+          setLiffDebug('📱 請透過 LINE 開啟以自動填入資料');
         }
-
-        if (!gotData) {
-          debugLines.push('❓ 請確認 LINE Login Channel 已開通必要權限');
-        }
-
-        setLiffDebug(debugLines.join('\n'));
       })
       .catch(err => {
-        console.error('LIFF Init error', err);
         setLiffDebug(`❌ LIFF 初始化失敗: ${err.message}`);
       });
   }, []);
