@@ -14,6 +14,38 @@ const supabase = createClient(
 const LIFF_ID = '2009262593-SeB2VF83';
 const LINE_ID_ID = '@835acfgq';
 const LINE_OA_URL = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID_ID)}/`;
+const LINE_CHANNEL_TOKEN = 'q7bissEGoDlGovi4Z5h2tPPNr2UuiT3PTgVEi7/EtL3aFS9RrUKT00TYDjAqRrgBBN4IDlAXTDL/V9nQtTLxSaAmZUhYxlHc3gS0FJkk0cKj/U2KLAxqg+srSmnJEOLVxW6s79bjC2hWQR2UFzDrgQdB04t89/1O/w1cDnyilFU=';
+const BOSS_LINE_UID = 'U835ec891ba538bd68895ccac3b66ce5e';
+
+// 發送訂單通知給老闆
+const notifyBoss = async (orderRef, name, phone, service, carType, amount) => {
+  const message = `🚨 新訂單來襲！
+
+訂單編號：${orderRef}
+姓名：${name}
+電話：${phone}
+服務：${service}
+車型：${carType}
+金額：$${amount}
+
+請確認收款並安排車輛！`;
+
+  try {
+    await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${LINE_CHANNEL_TOKEN}`
+      },
+      body: JSON.stringify({
+        to: BOSS_LINE_UID,
+        messages: [{ type: 'text', text: message }]
+      })
+    });
+  } catch (e) {
+    console.error('通知老闆失敗:', e);
+  }
+};
 
 const BASE_PRICING = {
   'small-dropoff': 1200, 'large-dropoff': 1500,
@@ -401,6 +433,10 @@ export default function App() {
     }
     const { error } = await supabase.from('orders').insert(orders);
     if (!error) {
+      // 發送通知給老闆
+      const mainForm = mode === 'pickup' ? pickupForm : dropoffForm;
+      await notifyBoss(ref, mainForm.name, mainForm.phone, getModeLabel(mode), getCarLabel(carType), totalPrice);
+      
       setOrderRef(ref); setOrderCreatedAt(Date.now());
       setPaidStep('choice'); navigateTo('payment');
     } else {
