@@ -601,14 +601,23 @@ export default function App() {
             <div className="d" style={{ color: S.textDim, fontSize: 13, marginTop: 4, transition: 'color 0.2s' }}>{item.desc}</div>
           </button>
         ))}
-        <a href={`https://line.me/ti/p/${LINE_ID_ID}`} target="_blank" rel="noopener noreferrer" style={{
-          display: 'block', padding: '18px 22px', border: `1px solid ${S.cardBorder}`,
+        <button onClick={() => {
+          const msg = "我需要人工報價";
+          if (liff.isInClient()) {
+            liff.sendMessages([{ type: 'text', text: msg }])
+              .then(() => liff.closeWindow())
+              .catch(() => window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank'));
+          } else {
+            window.open(LINE_OA_URL + encodeURIComponent(msg), '_blank');
+          }
+        }} style={{
+          display: 'block', width: '100%', padding: '18px 22px', border: `1px solid ${S.cardBorder}`,
           borderRadius: S.cardRadius, background: S.cardBg, backdropFilter: 'blur(20px)',
-          textAlign: 'center', textDecoration: 'none', transition: 'all 0.2s',
+          textAlign: 'center', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer',
         }}>
           <div style={{ color: S.textDim, fontSize: 13 }}>我真的不確定...</div>
           <div style={{ color: S.gold, fontWeight: 700, fontSize: 14, marginTop: 4 }}>需要人工報價 / 安全座椅 / 多點加停</div>
-        </a>
+        </button>
       </div>
       <BackBtn onClick={() => window.history.back()} />
     </Layout>
