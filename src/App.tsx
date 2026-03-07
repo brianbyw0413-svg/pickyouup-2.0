@@ -60,6 +60,26 @@ const BASE_PRICING = {
   'small-pickup': 1300, 'large-pickup': 1600,
 };
 
+// 林口區特別價格
+const LINKOU_PRICING = {
+  'small-dropoff': 800, 'large-dropoff': 1100,
+  'small-pickup': 900, 'large-pickup': 1200,
+};
+
+// 偵測是否為林口區地址
+const isLinkouAddress = (address) => {
+  if (!address) return false;
+  const a = address.toLowerCase();
+  return a.includes('林口') || a.includes('linkou');
+};
+
+// 取得報價（林口區優先）
+const getPricing = (carType, mode, address) => {
+  const isLinkou = isLinkouAddress(address);
+  const pricing = isLinkou ? LINKOU_PRICING : BASE_PRICING;
+  return pricing[`${carType}-${mode}`] || 0;
+};
+
 const CREDIT_CARD_LINKS = {
   1200: 'https://api.payuni.com.tw/api/uop/receive_info/2/1/U03424091/PN8Fwvsnm1m7AdiVeUUp',
   1300: 'https://api.payuni.com.tw/api/uop/receive_info/2/1/U03424091/N42KcEIcfxs3YbqIOlCq',
@@ -364,8 +384,9 @@ export default function App() {
   };
 
   // ── 價格 ──
-  const dropoffBase = BASE_PRICING[`${carType}-dropoff`] || 0;
-  const pickupBase = BASE_PRICING[`${carType}-pickup`] || 0;
+  // 根據模式和地址取得報價（林口區特別價格）
+  const dropoffBase = getPricing(carType, 'dropoff', dropoffForm.address);
+  const pickupBase = getPricing(carType, 'pickup', pickupForm.address);
   const totalPrice = mode === 'dropoff' ? dropoffBase : mode === 'pickup' ? pickupBase : mode === 'both' ? dropoffBase + pickupBase : 0;
 
   // ── 表單驗證 ──
